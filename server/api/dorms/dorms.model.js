@@ -7,8 +7,11 @@ const schema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'DormPhoto'
     },
-    dormKey: { type: String, minlength: 3, maxlength: 100, required: true }, // RPI SLL website key
-    styles: [{ type: String, enum: ['Suite', 'Traditional'] }],
+    name: { type: String, minlength: 3, maxlength: 50 },
+    year: { type: String, minlength: 3, maxlength: 50 }, // Freshman, Sophomore, etc.
+    // RPI SLL website key. If not provided then manual input assumed
+    key: { type: String, minlength: 3, maxlength: 100 },
+    styles: [{ type: String, enum: ['Suite', 'Traditional', 'Apartment'] }],
     roomTypes: [{
       name: { type: String, required: true, maxlength: 35 },
       area: { type: Number }, // Area of the room in sqft

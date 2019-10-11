@@ -1,8 +1,6 @@
 const request = require('request-promise')
 const cheerio = require('cheerio')
 
-const logger = require('./logger')
-
 const SLL_BUILDING_URL = 'https://sll.rpi.edu/buildings/' // + key
 
 async function scrapeForDormBuilding (key) {
@@ -36,6 +34,46 @@ async function scrapeForDormBuilding (key) {
   obj.genderBreakdown = $('.community-info td:contains("Gender Breakdown")').next().text().trim()
 
   /*
+   * Restrooms section
+   */
+  obj.hasFloorRestrooms = $('.restrooms td:contains("On Floor")').next().find('i').attr('aria-label') === 'Yes'
+  obj.hasRoomRestrooms = $('.restrooms td:contains("In Room")').next().find('i').attr('aria-label') === 'Yes'
+  obj.hasCleaning = $('.restrooms td:contains("Cleaning Available")').next().find('i').attr('aria-label') === 'Yes'
+  obj.cleaningFrequency = $('.restrooms td:contains("Cleaning Schedule")').next().text().trim()
+  obj.hasGenderNeutralRestroom = $('.restrooms td:contains("All-Gender Restroom Available")').next()
+    .find('i').attr('aria-label') === 'Yes'
+
+  /*
+   * Furniture section
+   */
+  obj.furniture = []
+  $('.furniture tr').each((index, e) => {
+    const $furnitureItem = cheerio('td', e)
+    const checkOrXIcon = $furnitureItem.next().find('i')
+    obj.furniture.push({
+      name: $furnitureItem.first().text().trim(),
+      // If icon doesn't exist, assume true
+      exists: checkOrXIcon.length ? $furnitureItem.next().find('i').attr('aria-label') === 'Yes' : true,
+      description: $furnitureItem.next().text().trim()
+    })
+  })
+
+  /*
+   * Amenities section
+   */
+  obj.amenities = []
+  $('.amenities tr').each((index, e) => {
+    const $amenity = cheerio('td', e)
+    const checkOrXIcon = $amenity.next().find('i')
+    obj.amenities.push({
+      name: $amenity.first().text().trim(),
+      // If icon doesn't exist, assume true
+      exists: checkOrXIcon.length ? checkOrXIcon.attr('aria-label') === 'Yes' : true,
+      description: $amenity.next().text().trim()
+    })
+  })
+
+  /*
    * Room types section
    */
   obj.roomTypes = []
@@ -51,6 +89,11 @@ async function scrapeForDormBuilding (key) {
       })
     }
   })
+
+  /*
+   * Dining Hall section
+   */
+  obj.closestDiningHall = $('.dining td:contains("Nearest Dining Hall")').next().text().trim()
 
   return obj
 }

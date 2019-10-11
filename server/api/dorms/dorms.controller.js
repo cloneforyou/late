@@ -59,7 +59,7 @@ async function createAutomaticDorm (ctx) {
     return ctx.send(502, 'Invalid response received from SLL.')
   }
 
-  await updateOrCreateDorm(dormData)
+  await updateOrCreateDorm({ ...dormData, key: ctx.request.body.key })
   ctx.created()
 }
 
@@ -112,7 +112,7 @@ async function updateDorm (ctx) {
   }
 
   // Merge the ID passed via params into the values sent to updateOrCreateDorm
-  await updateOrCreateDorm(Object.assign(ctx.request.body, { _id: ctx.params.id }))
+  await updateOrCreateDorm({ ...ctx.request.body, _id: ctx.params.id })
   ctx.ok()
 }
 
@@ -120,8 +120,18 @@ async function updateDorm (ctx) {
  * Refresh the dorm data for all dorms on the list (which aren't manually filled)
  * @param ctx {Koa context}
  */
-function refreshDormData (ctx) {
-  // TODO
+async function refreshDormData (ctx) {
+  const dorms = await Dorm.find({ key: { $exists: true } })
+  if (!dorms) {
+    return
+  }
+
+  console.log(dorms.length)
+
+  for (let i = 0; i < dorms.length; i++) {
+    await updateOrCreateDorm(await scrapeForDormBuilding(dorms[i].key))
+  }
+  ctx.ok()
 }
 
 /**

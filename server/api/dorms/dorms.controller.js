@@ -71,7 +71,7 @@ async function createAutomaticDorm (ctx) {
  * @returns {Promise<void>}
  */
 async function updateOrCreateDorm (values) {
-  let dorm = values._id ? Dorm.findOne({ _id: values._id }) : null
+  let dorm = values._id ? await Dorm.findOne({ _id: values._id }) : null
   if (!dorm) {
     dorm = new Dorm()
   }
@@ -106,8 +106,14 @@ async function updateOrCreateDorm (values) {
  * Update the provided dorm in <pre>ctx.request.body._id</pre> with the data in <pre>ctx.request.body</pre>
  * @param ctx {Koa context}
  */
-function updateDorm (ctx) {
-  // TODO
+async function updateDorm (ctx) {
+  if (!ctx.request.body || !ctx.params.id) {
+    return ctx.badRequest('Missing required form/param data.')
+  }
+
+  // Merge the ID passed via params into the values sent to updateOrCreateDorm
+  await updateOrCreateDorm(Object.assign(ctx.request.body, { _id: ctx.params.id }))
+  ctx.ok()
 }
 
 /**
@@ -124,7 +130,11 @@ function refreshDormData (ctx) {
  * @returns {Promise<void>}
  */
 async function getDorms (ctx) {
-  const dorms = await Dorm.find({ name: ctx.query.search || undefined })
+  const searchObj = {}
+  if (ctx.query.search) {
+    searchObj.name = new RegExp('.*' + ctx.query.search + '.*', 'i')
+  }
+  const dorms = await Dorm.find(searchObj)
   ctx.ok({ dorms })
 }
 

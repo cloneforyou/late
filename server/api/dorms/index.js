@@ -19,7 +19,7 @@ router.post('/photos/:dormPhotoID/confirm', requireAdmin, PhotosCtrl.confirmDorm
 router.delete('/photos/:dormPhotoID', requireAdmin, PhotosCtrl.removeDormPhoto)
 
 router.get('/', Ctrl.getDorms)
-router.get('/:id/refresh', requireAdmin, Ctrl.refreshDormData)
+router.get('/refresh', requireAdmin, Ctrl.refreshDormData)
 router.post('/', requireAdmin, Ctrl.createDorm)
 router.put('/:id', requireAdmin, Ctrl.updateDorm)
 router.delete('/:id', requireAdmin, Ctrl.deleteDorm)

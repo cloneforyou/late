@@ -40,7 +40,8 @@ const schema = new Schema(
 
     amenities: [{ // e.g. AC, blinds, cable, etc.
       name: { type: String, maxlength: 100 },
-      exists: { type: Boolean }
+      exists: { type: Boolean },
+      description: { type: String, maxlength: 100 }
     }],
 
     closestDiningHall: { type: String,

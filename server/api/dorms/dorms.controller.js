@@ -1,5 +1,4 @@
 const logger = require('../../modules/logger')
-const axios = require('axios')
 const Dorm = require('./dorms.model')
 const { scrapeForDormBuilding } = require('../../modules/dorm_scraping')
 
@@ -52,16 +51,15 @@ async function createAutomaticDorm (ctx) {
     return ctx.badRequest('Malformed required \'key\' parameter.')
   }
 
-  let response
+  let dormData
   try {
-    response = await axios.get('https://sll.rpi.edu/buildings/' + ctx.request.body.key)
+    dormData = await scrapeForDormBuilding(ctx.request.body.key)
   } catch (e) {
+    logger.error('Error while fetching dorm data: ' + (e.message ? e.message : e))
     return ctx.send(502, 'Invalid response received from SLL.')
   }
 
-  // TODO implement scraping here and add it to the body
-
-  await updateOrCreateDorm(ctx.request.body)
+  await updateOrCreateDorm(dormData)
   ctx.created()
 }
 
@@ -91,7 +89,15 @@ async function updateOrCreateDorm (values) {
   }
   for (let i = 0; i < intFields.length; i++) {
     const f = intFields[i]
-    dorm[f] = values[f] === undefined ? dorm[f] : parseInt(values[f])
+    if (values[f] === undefined) {
+      continue
+    }
+
+    const intVal = parseInt(values[f])
+    if (isNaN(intVal) || intVal === undefined) {
+      continue
+    }
+    dorm[f] = intVal
   }
   await dorm.save()
 }

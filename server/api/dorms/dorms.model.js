@@ -7,6 +7,7 @@ const schema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'DormPhoto'
     },
+    // TODO ratings, reviews, photos, questions w/ populate? Research populate()
     name: { type: String, minlength: 3, maxlength: 50 },
     year: { type: String, minlength: 3, maxlength: 50 }, // Freshman, Sophomore, etc.
     // RPI SLL website key. If not provided then manual input assumed

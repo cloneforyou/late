@@ -7,7 +7,7 @@ const Schema = mongoose.Schema
  */
 const schema = new Schema(
   {
-    author: {
+    _author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Student',
       required: true

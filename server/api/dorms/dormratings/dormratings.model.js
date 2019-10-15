@@ -1,13 +1,13 @@
 const mongoose = require('mongoose')
 
 const schema = new mongoose.Schema({
-  from: {
+  _from: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Student',
     required: true
   },
   value: { type: String, required: true, enum: ['POSITIVE', 'NEGATIVE'] },
-  isFor: { // What this rating is for, such as an entire dorm or a specific review of a dorm.
+  _isFor: { // What this rating is for, such as an entire dorm or a specific review of a dorm.
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'isForType',
     required: true

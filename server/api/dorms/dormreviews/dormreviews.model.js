@@ -5,9 +5,9 @@ const Message = require('../../messages/messages.model')
 const schema = new Schema(
   {
     title: { type: String, maxlength: 40, required: true },
-    dorm: { type: mongoose.Schema.Types.ObjectId, ref: 'Dorm', required: true },
+    _dorm: { type: mongoose.Schema.Types.ObjectId, ref: 'Dorm', required: true },
     // Previous versions of this review are simply other, older instances of Message
-    previousEdits: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }],
+    _previousEdits: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }],
     isAnonymous: { type: Boolean, default: false }
     // TODO ratings w/ populate? Research populate()
   }

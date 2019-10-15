@@ -6,7 +6,7 @@ const schema = new Schema(
   {
     message: { maxlength: 100 },
     // If dorm == null then assume general question
-    dorm: { type: mongoose.Schema.Types.ObjectId, ref: 'Dorm', default: null },
+    _dorm: { type: mongoose.Schema.Types.ObjectId, ref: 'Dorm', default: null },
     isAnonymous: { type: Boolean, default: true }
     // TODO responses w/ populate? Research populate()
     // TODO ratings w/ populate? Research populate()

@@ -4,12 +4,12 @@ const Message = require('../../../messages/messages.model')
 
 const schema = new Schema(
   {
-    question: {
+    _question: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'DormQuestion'
     },
     // Previous versions of this answer are simply other, older instances of Message
-    previousEdits: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }]
+    _previousEdits: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }]
     // TODO ratings w/ populate? Research populate()
   }
 )

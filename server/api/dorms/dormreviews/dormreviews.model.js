@@ -6,14 +6,19 @@ const schema = new Schema(
   {
     title: { type: String, maxlength: 40, required: true },
     _dorm: { type: mongoose.Schema.Types.ObjectId, ref: 'Dorm', required: true },
-    // Previous versions of this review are simply other, older instances of Message
-    _previousEdits: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }],
     isAnonymous: { type: Boolean, default: false }
-    // TODO ratings w/ populate? Research populate()
   }
 )
 
 schema.set('toObject', { getters: true, virtuals: true })
 schema.set('toJSON', { getters: true, virtuals: true })
+
+schema.methods.toJSON = function () {
+  const obj = this.toObject()
+  if (obj.isAnonymous) {
+    delete obj._author
+  }
+  return obj
+}
 
 module.exports = Message.discriminator('DormReview', schema)

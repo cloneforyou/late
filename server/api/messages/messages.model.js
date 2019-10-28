@@ -12,7 +12,9 @@ const schema = new Schema(
       ref: 'Student',
       required: true
     },
-    body: { type: String, maxlength: 2000, required: true } // Markdown supported
+    body: { type: String, maxlength: 2000, required: true }, // Markdown supported
+    // Previous versions of this answer are simply other, older instances of Message
+    _previousEdits: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }]
   },
   { timestamps: true, discriminatorKey: 'type' }
 )

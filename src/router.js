@@ -430,6 +430,14 @@ const router = new Router({
         title: 'Not Found'
       },
       component: () => import('@/views/TheNotFoundPage.vue')
+    },
+    {
+      path: '/late-invaders',
+      name: 'late-invaders',
+      meta: {
+        title: 'Late Invaders!'
+      },
+      component: () => import('@/views/LateInvaders.vue')
     }
   ]
 })

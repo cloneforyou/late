@@ -5,7 +5,7 @@ const DormRating = require('../../dormratings/dormratings.model')
 
 async function getAnswersForQuestion (ctx) {
   const queryObj = { _question: ctx.request.params.id }
-  if (ctx.query.search) {
+  if (ctx.query.search) { // fixme ReDoS vulnerability?
     queryObj.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
   }
 
@@ -31,10 +31,14 @@ async function postAnswer (ctx) {
 }
 
 async function editAnswer (ctx) {
-  if (!ctx.request.body.message || ctx.request.bod.message.length < 2) {
+  if (!ctx.request.body.message || ctx.request.body.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
   }
-  const original = await DormQuestionAnswer.findOne({ _id: ctx.request.params.id })
+  const searchObj = { _id: ctx.request.params.id }
+  if (!ctx.state.user.admin) { // Users can only edit their own answers unless they're admin
+    searchObj._author = ctx.state.user._id
+  }
+  const original = await DormQuestionAnswer.findOne(searchObj)
   if (original == null) {
     return ctx.notFound()
   }
@@ -48,7 +52,11 @@ async function editAnswer (ctx) {
 }
 
 async function deleteAnswer (ctx) {
-  const result = await DormQuestionAnswer.deleteOne({ _id: ctx.request.params.id })
+  const searchObj = { _id: ctx.request.params.id }
+  if (!ctx.state.user.admin) { // Users can only delete their own answers unless they're admin
+    searchObj._author = ctx.state.user._id
+  }
+  const result = await DormQuestionAnswer.deleteOne(searchObj)
   if (!result.deletedCount) {
     return ctx.notFound()
   }
@@ -78,4 +86,12 @@ async function voteOnAnswer (ctx) {
   rating.value = ctx.request.body.value === 'POSITIVE' ? 'POSITIVE' : 'NEGATIVE'
   rating.save()
   ctx.noContent()
+}
+
+module.exports = {
+  getAnswersForQuestion,
+  postAnswer,
+  editAnswer,
+  deleteAnswer,
+  voteOnAnswer
 }

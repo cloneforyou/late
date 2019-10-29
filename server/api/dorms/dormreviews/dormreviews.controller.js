@@ -42,7 +42,11 @@ async function editReview (ctx) {
     return ctx.badRequest('Please provide a longer review')
   }
 
-  const original = await DormReview.findOne({ _id: ctx.request.params.id })
+  const searchObj = { _id: ctx.request.params.id }
+  if (!ctx.state.user.admin) { // Users can only edit their own reviews unless they're admin
+    searchObj._author = ctx.state.user._id
+  }
+  const original = await DormReview.findOne(searchObj)
   if (original == null) {
     return ctx.notFound()
   }
@@ -57,7 +61,11 @@ async function editReview (ctx) {
 }
 
 async function deleteReview (ctx) {
-  const result = await DormReview.deleteOne({ _id: ctx.request.params.id })
+  const searchObj = { _id: ctx.request.params.id }
+  if (!ctx.state.user.admin) { // If the user isn't admin then they can only delete their own reviews
+    searchObj._author = ctx.state.user._id
+  }
+  const result = await DormReview.deleteOne(searchObj)
   if (!result.deletedCount) {
     return ctx.notFound()
   }
@@ -87,4 +95,12 @@ async function voteOnReview (ctx) {
   rating.value = ctx.request.body.value === 'POSITIVE' ? 'POSITIVE' : 'NEGATIVE'
   rating.save()
   ctx.noContent()
+}
+
+module.exports = {
+  getReviews,
+  postReview,
+  editReview,
+  deleteReview,
+  voteOnReview
 }

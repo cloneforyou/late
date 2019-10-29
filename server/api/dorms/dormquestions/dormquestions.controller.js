@@ -61,7 +61,11 @@ async function editQuestion (ctx) {
     return ctx.badRequest('Please provide a longer question title')
   }
 
-  const original = await DormQuestion.findOne({ _id: ctx.request.params.id })
+  const searchObj = { _id: ctx.request.params.id }
+  if (!ctx.state.user.admin) { // Users can only edit their own questions unless they're admin
+    searchObj._author = ctx.state.user._id
+  }
+  const original = await DormQuestion.findOne(searchObj)
 
   if (original == null) {
     return ctx.notFound()
@@ -80,7 +84,11 @@ async function editQuestion (ctx) {
 }
 
 async function deleteQuestion (ctx) {
-  const dq = await DormQuestion.deleteOne({ _id: ctx.request.params.id })
+  const searchObj = { _id: ctx.request.params.id }
+  if (!ctx.state.user.admin) { // Users can only delete their own questions unless they're admin
+    searchObj._author = ctx.state.user._id
+  }
+  const dq = await DormQuestion.deleteOne(searchObj)
   if (!dq.deletedCount) {
     return ctx.notFound()
   }
@@ -110,4 +118,12 @@ async function voteOnQuestion (ctx) {
   rating.value = ctx.request.body.value === 'POSITIVE' ? 'POSITIVE' : 'NEGATIVE'
   rating.save()
   ctx.noContent()
+}
+
+module.exports = {
+  getQuestions,
+  postQuestion,
+  editQuestion,
+  deleteQuestion,
+  voteOnQuestion
 }

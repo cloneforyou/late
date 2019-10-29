@@ -141,7 +141,7 @@ async function refreshDormData (ctx) {
  */
 async function getDorms (ctx) {
   const searchObj = {}
-  if (ctx.query.search) {
+  if (ctx.query.search) { // fixme ReDoS vulnerability?
     searchObj.name = new RegExp('.*' + ctx.query.search + '.*', 'i')
   }
   const dorms = await Dorm.find(searchObj)

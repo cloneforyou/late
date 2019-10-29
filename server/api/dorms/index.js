@@ -3,14 +3,18 @@ const router = new Router()
 
 const Ctrl = require('./dorms.controller')
 const PhotosCtrl = require('./dormphotos/dormphotos.controller')
+const QuestionsIndex = require('./dormquestions/index')
+const ReviewsIndex = require('./dormreviews/index')
 
 const requireAdmin = function (ctx, next) {
   if (!ctx.state.user || !ctx.state.user.admin) return ctx.unauthorized('Must be logged in as an admin!')
   return next()
 }
 
-// Cannot nest routers - See issue https://github.com/ZijianHe/koa-router/issues/244
+// Cannot nest already used routers - See issue https://github.com/ZijianHe/koa-router/issues/244
 // router.use('/photos', require('./dormphotos'))
+router.use('/questions', QuestionsIndex)
+router.use('/reviews', ReviewsIndex)
 
 router.get('/photos/', PhotosCtrl.getDormPhotos)
 // router.get('/photos/:dormPhotoID', PhotosCtrl.getDormPhoto)

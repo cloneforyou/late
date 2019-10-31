@@ -4,10 +4,10 @@ const DormRating = require('../dormratings/dormratings.model')
 const Dorm = require('../dorms.model')
 
 async function getReviews (ctx) {
-  const queryObj = { _dorm: ctx.request.params.id, $or: {} }
+  const queryObj = { _dorm: ctx.params.id, $or: [] }
   if (ctx.query.search) {
-    queryObj.$or.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
-    queryObj.$or.title = new RegExp('.*' + ctx.query.search + '.*', 'i')
+    queryObj.$or.push({ body: new RegExp('.*' + ctx.query.search + '.*', 'i') })
+    queryObj.$or.push({ title: new RegExp('.*' + ctx.query.search + '.*', 'i') })
   }
 
   const reviews = await DormReview.find(queryObj)
@@ -21,7 +21,7 @@ async function postReview (ctx) {
     return ctx.badRequest('Please provide a longer title and/or review')
   }
 
-  const d = await Dorm.findOne({ _id: ctx.request.params.id })
+  const d = await Dorm.findOne({ _id: ctx.params.id })
   if (d == null) {
     return ctx.notFound()
   }
@@ -29,7 +29,7 @@ async function postReview (ctx) {
   review.title = ctx.request.body.title
   review._dorm = d
   review._author = ctx.state.user._id
-  review.body = ctx.request.body.message
+  review.body = ctx.request.body.body
   review.save()
   ctx.created()
 }
@@ -42,7 +42,7 @@ async function editReview (ctx) {
     return ctx.badRequest('Please provide a longer review')
   }
 
-  const searchObj = { _id: ctx.request.params.id }
+  const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only edit their own reviews unless they're admin
     searchObj._author = ctx.state.user._id
   }
@@ -54,14 +54,14 @@ async function editReview (ctx) {
   newReview.title = ctx.request.body.title ? ctx.request.body.title : original.title
   newReview._dorm = original._dorm
   newReview._author = original._author
-  newReview.body = ctx.request.body.message ? ctx.request.body.message : original.body
+  newReview.body = ctx.request.body.body ? ctx.request.body.body : original.body
   newReview._previousEdits.push(original)
   newReview.save()
   ctx.created()
 }
 
 async function deleteReview (ctx) {
-  const searchObj = { _id: ctx.request.params.id }
+  const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // If the user isn't admin then they can only delete their own reviews
     searchObj._author = ctx.state.user._id
   }
@@ -73,14 +73,14 @@ async function deleteReview (ctx) {
 }
 
 async function voteOnReview (ctx) {
-  const review = await DormReview.findOne({ _id: ctx.request.params.id })
+  const review = await DormReview.findOne({ _id: ctx.params.id })
   if (review == null) {
     return ctx.notFound()
   }
   let rating
 
   rating = await DormRating.findOne({
-    _isFor: ctx.request.params.id,
+    _isFor: ctx.params.id,
     isForType: 'DormReview',
     _from: ctx.state.user._id
   })

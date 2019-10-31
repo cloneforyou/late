@@ -61,7 +61,7 @@ async function editQuestion (ctx) {
     return ctx.badRequest('Please provide a longer question title')
   }
 
-  const searchObj = { _id: ctx.request.params.id }
+  const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only edit their own questions unless they're admin
     searchObj._author = ctx.state.user._id
   }
@@ -84,7 +84,7 @@ async function editQuestion (ctx) {
 }
 
 async function deleteQuestion (ctx) {
-  const searchObj = { _id: ctx.request.params.id }
+  const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only delete their own questions unless they're admin
     searchObj._author = ctx.state.user._id
   }
@@ -96,14 +96,14 @@ async function deleteQuestion (ctx) {
 }
 
 async function voteOnQuestion (ctx) {
-  const dq = await DormQuestion.findOne({ _id: ctx.request.params.id })
+  const dq = await DormQuestion.findOne({ _id: ctx.params.id })
   if (dq == null) {
     return ctx.notFound()
   }
   let rating
 
   rating = await DormRating.findOne({
-    _isFor: ctx.request.params.id,
+    _isFor: ctx.params.id,
     isForType: 'DormQuestion',
     _from: ctx.state.user._id
   })

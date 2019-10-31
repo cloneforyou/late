@@ -4,7 +4,7 @@ const DormQuestion = require('../dormquestions.model')
 const DormRating = require('../../dormratings/dormratings.model')
 
 async function getAnswersForQuestion (ctx) {
-  const queryObj = { _question: ctx.request.params.id }
+  const queryObj = { _question: ctx.params.id }
   if (ctx.query.search) { // fixme ReDoS vulnerability?
     queryObj.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
   }
@@ -18,7 +18,7 @@ async function postAnswer (ctx) {
   if (!ctx.request.body.message || ctx.request.bod.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
   }
-  const q = await DormQuestion.findOne({ _id: ctx.request.params.id })
+  const q = await DormQuestion.findOne({ _id: ctx.params.id })
   if (q == null) {
     return ctx.notFound()
   }
@@ -34,7 +34,7 @@ async function editAnswer (ctx) {
   if (!ctx.request.body.message || ctx.request.body.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
   }
-  const searchObj = { _id: ctx.request.params.id }
+  const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only edit their own answers unless they're admin
     searchObj._author = ctx.state.user._id
   }
@@ -52,7 +52,7 @@ async function editAnswer (ctx) {
 }
 
 async function deleteAnswer (ctx) {
-  const searchObj = { _id: ctx.request.params.id }
+  const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only delete their own answers unless they're admin
     searchObj._author = ctx.state.user._id
   }
@@ -64,14 +64,14 @@ async function deleteAnswer (ctx) {
 }
 
 async function voteOnAnswer (ctx) {
-  const ans = await DormQuestionAnswer.findOne({ _id: ctx.request.params.id })
+  const ans = await DormQuestionAnswer.findOne({ _id: ctx.params.id })
   if (ans == null) {
     return ctx.notFound()
   }
   let rating
 
   rating = await DormRating.findOne({
-    _isFor: ctx.request.params.id,
+    _isFor: ctx.params.id,
     isForType: 'DormQuestionAnswer',
     _from: ctx.state.user._id
   })

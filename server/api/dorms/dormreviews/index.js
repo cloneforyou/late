@@ -3,7 +3,7 @@ const router = new Router()
 
 const Ctrl = require('./dormreviews.controller')
 
-router.get('/', Ctrl.getReviews)
+router.get('/:id', Ctrl.getReviews)
 router.post('/:id', Ctrl.postReview)
 router.put('/:id', Ctrl.editReview)
 router.delete('/:id', Ctrl.deleteReview)

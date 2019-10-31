@@ -4,10 +4,12 @@ const DormRating = require('../dormratings/dormratings.model')
 const Dorm = require('../dorms.model')
 
 async function getReviews (ctx) {
-  const queryObj = { _dorm: ctx.params.id, $or: [] }
+  const queryObj = { _dorm: ctx.params.id }
   if (ctx.query.search) {
-    queryObj.$or.push({ body: new RegExp('.*' + ctx.query.search + '.*', 'i') })
-    queryObj.$or.push({ title: new RegExp('.*' + ctx.query.search + '.*', 'i') })
+    queryObj.$or = [
+      { body: new RegExp('.*' + ctx.query.search + '.*', 'i') },
+      { title: new RegExp('.*' + ctx.query.search + '.*', 'i') }
+    ]
   }
 
   const reviews = await DormReview.find(queryObj)
@@ -55,6 +57,7 @@ async function editReview (ctx) {
   newReview._dorm = original._dorm
   newReview._author = original._author
   newReview.body = ctx.request.body.body ? ctx.request.body.body : original.body
+  newReview._previousEdits = original._previousEdits // Copy list of old edits & add the original to it
   newReview._previousEdits.push(original)
   newReview.save()
   ctx.created()

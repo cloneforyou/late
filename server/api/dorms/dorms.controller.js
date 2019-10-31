@@ -37,7 +37,7 @@ async function createDorm (ctx) {
     await createAutomaticDorm(ctx)
   } else {
     await updateOrCreateDorm(ctx.request.body)
-    ctx.ok()
+    ctx.created()
   }
 }
 

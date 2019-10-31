@@ -22,4 +22,4 @@ const schema = new mongoose.Schema({
 schema.set('toObject', { getters: true, virtuals: true })
 schema.set('toJSON', { getters: true, virtuals: true })
 
-module.exports = mongoose.Model('DormRating', schema)
+module.exports = mongoose.model('DormRating', schema)

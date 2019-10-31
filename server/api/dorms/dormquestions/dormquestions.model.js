@@ -4,7 +4,6 @@ const Message = require('../../messages/messages.model')
 
 const schema = new Schema(
   {
-    message: { maxlength: 100 },
     // If dorm == null then assume general question
     _dorm: { type: mongoose.Schema.Types.ObjectId, ref: 'Dorm', default: null },
     isAnonymous: { type: Boolean, default: true }

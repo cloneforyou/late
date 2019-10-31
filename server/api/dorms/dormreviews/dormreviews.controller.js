@@ -4,7 +4,7 @@ const DormRating = require('../dormratings/dormratings.model')
 const Dorm = require('../dorms.model')
 
 async function getReviews (ctx) {
-  const queryObj = { _dorm: ctx.params.id }
+  const queryObj = { _dorm: ctx.params.id, hasBeenEdited: false }
   if (ctx.query.search) {
     queryObj.$or = [
       { body: new RegExp('.*' + ctx.query.search + '.*', 'i') },
@@ -12,8 +12,7 @@ async function getReviews (ctx) {
     ]
   }
 
-  const reviews = await DormReview.find(queryObj)
-
+  const reviews = await DormReview.find(queryObj).populate('_previousEdits')
   ctx.ok({ reviews })
 }
 
@@ -52,6 +51,10 @@ async function editReview (ctx) {
   if (original == null) {
     return ctx.notFound()
   }
+  if (original.hasBeenEdited) {
+    return ctx.send(409, { message: 'This message has been edited and this object is no longer available.' })
+  }
+
   const newReview = new DormReview()
   newReview.title = ctx.request.body.title ? ctx.request.body.title : original.title
   newReview._dorm = original._dorm
@@ -59,6 +62,8 @@ async function editReview (ctx) {
   newReview.body = ctx.request.body.body ? ctx.request.body.body : original.body
   newReview._previousEdits = original._previousEdits // Copy list of old edits & add the original to it
   newReview._previousEdits.push(original)
+  original.hasBeenEdited = true
+  original.save()
   newReview.save()
   ctx.created()
 }
@@ -68,10 +73,21 @@ async function deleteReview (ctx) {
   if (!ctx.state.user.admin) { // If the user isn't admin then they can only delete their own reviews
     searchObj._author = ctx.state.user._id
   }
-  const result = await DormReview.deleteOne(searchObj)
-  if (!result.deletedCount) {
+  const review = await DormReview.findOne(searchObj)
+  if (review == null) {
     return ctx.notFound()
   }
+  if (review.hasBeenEdited) { // Cannot delete message if it is an outdated version of another message
+    return ctx.send(409, { message: 'This message has been edited and this object is no longer available.' })
+  }
+
+  if (review._previousEdits) { // Delete previous instances of this review as well
+    for (const prev of review._previousEdits) {
+      await DormReview.deleteOne({ _id: prev._id })
+    }
+  }
+
+  await DormReview.deleteOne({ _id: review._id })
   ctx.noContent()
 }
 

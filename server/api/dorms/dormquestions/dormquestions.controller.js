@@ -11,7 +11,7 @@ const Dorm = require('../dorms.model')
  * @returns {Promise<void>}
  */
 async function getQuestions (ctx) {
-  const queryObj = {}
+  const queryObj = { hasBeenEdited: false }
   if (ctx.query.dorm) {
     queryObj._dorm = ctx.query.dorm
   } else {
@@ -66,9 +66,11 @@ async function editQuestion (ctx) {
     searchObj._author = ctx.state.user._id
   }
   const original = await DormQuestion.findOne(searchObj)
-
   if (original == null) {
     return ctx.notFound()
+  }
+  if (original.hasBeenEdited) { // Cannot delete message if it is an outdated version of another message
+    return ctx.send(409, { message: 'This message has been edited and this object is no longer available.' })
   }
 
   const newMessage = new DormQuestion()
@@ -76,8 +78,11 @@ async function editQuestion (ctx) {
   newMessage.isAnonymous = ctx.request.body.isAnonymous === undefined
     ? original.isAnonymous : !!ctx.request.body.isAnonymous
   newMessage._dorm = original._dorm
+  newMessage._previousEdits = original._previousEdits // Copy list of old edits & add the original to it
   newMessage._previousEdits.push(original)
   newMessage._author = original._author
+  original.hasBeenEdited = true
+  original.save()
   newMessage.save()
 
   ctx.created()
@@ -88,10 +93,21 @@ async function deleteQuestion (ctx) {
   if (!ctx.state.user.admin) { // Users can only delete their own questions unless they're admin
     searchObj._author = ctx.state.user._id
   }
-  const dq = await DormQuestion.deleteOne(searchObj)
-  if (!dq.deletedCount) {
+  const dq = await DormQuestion.findOne(searchObj)
+  if (dq == null) {
     return ctx.notFound()
   }
+  if (dq.hasBeenEdited) { // Cannot delete message if it is an outdated version of another message
+    return ctx.send(409, { message: 'This message has been edited and this object is no longer available.' })
+  }
+
+  if (dq._previousEdits) { // Delete all previous versions of this question
+    for (const prev of dq._previousEdits) {
+      await DormQuestion.deleteOne({ _id: prev._id })
+    }
+  }
+
+  await DormQuestion.deleteOne({ _id: dq._id })
   ctx.noContent()
 }
 

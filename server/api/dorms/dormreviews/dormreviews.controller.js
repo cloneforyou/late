@@ -16,17 +16,21 @@ async function getReviews (ctx) {
 
   let reviews = await DormReview.aggregate()
     .match(queryObj)
-    .lookup({
-      from: 'DormRating',
+    .lookup({ // Stream ratings for this review into the 'rating' array
+      from: 'dormratings',
       localField: '_id',
       foreignField: '_isFor',
       as: 'rating'
     })
-    .addFields({
-      rating: { $sum: 'rating' }
+    .addFields({ // Reduce the array of ratings into a simple integer value
+      rating: { $reduce: {
+        input: '$rating',
+        initialValue: 0,
+        in: { $add: ['$$value', '$$this.value'] }
+      } }
     })
+  // populate _previousEdits to contain the actual edit data
   reviews = await DormReview.populate(reviews, { path: '_previousEdits' })
-  // const reviews = await DormReview.find(queryObj).populate('_previousEdits')
   ctx.ok({ reviews })
 }
 
@@ -79,6 +83,16 @@ async function editReview (ctx) {
   original.hasBeenEdited = true
   original.save()
   newReview.save()
+
+  // Update ratings to point to the new message
+  const ratings = await DormRating.find({ _isFor: original._id })
+  if (ratings) {
+    ratings.forEach((r) => {
+      r._isFor = newReview._id
+      r.save()
+    })
+  }
+
   ctx.created()
 }
 

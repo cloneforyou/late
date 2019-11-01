@@ -1,53 +1,65 @@
 <template>
   <div>
-    ha
+    <canvas
+      ref="game"
+      class="canvas"
+    />
   </div>
 </template>
 
 <script>
 export default {
-  data: () => ({
-    length: 50,
-    bullets: {},
-    lost: false
-  }),
-  mounted: function () {
-    location.hash = ''
-
+  data () {
+    return {
+      context: {},
+      position: {
+        x: 0,
+        y: 0
+      }
+    }
+  },
+  mounted () {
     // add listeners
     document.addEventListener('keydown', () => { this.onKeyDown(event) })
 
-    setInterval(this.gameLoop, 50)
+    this.context = this.$refs.game.getContext('2d')
+    this.$socket.on('position', data => {
+      this.position = data
+      this.context.clearRect(this.$refs.game.width, this.$refs.game.height)
+      this.context.fillstyle = '#FFFFFF'
+      this.fillRect(0, 0, this.$refs.game.width, this.$refs.game.height)
+      this.context.fillstyle = '#000000'
+      this.fillRect(this.position.x, this.position.y, 20, 20)
+    })
   },
   methods: {
-    gameLoop: function () {
-      var board = '👉_____________________________________________'
-
-      for (var i = 1; i < this.length; i++) {
-        if (this.bullets[i]) {
-          board[i] = '-'
-          this.bullets.delete(i)
-          this.bullets[i + 1] = {}
-        }
+    onKeyDown (event) {
+      switch (event.code) {
+        case 'ArrowLeft':
+          this.move('left')
+          break
+        case 'ArrowRight':
+          this.move('right')
+          break
+        case 'ArrowUp':
+          this.move('up')
+          break
+        case 'ArrowDown':
+          this.move('down')
+          break
       }
-
-      location.hash = board
     },
-    shoot: function () {
-      console.log('SHOT!')
-      this.bullets[1] = {}
-    },
-    onKeyDown: function (event) {
-      if (event.code !== 'Space') return false
-      this.shoot()
-    },
-    replaceAt: function (i, r) {
-
+    move (direction) {
+      this.$socket.emit('move', direction)
     }
   }
 }
 </script>
 
 <style scoped>
-
+  .canvas {
+    width: 90%;
+    height: 50%;
+    border: 1px solid black;
+  }
 </style>

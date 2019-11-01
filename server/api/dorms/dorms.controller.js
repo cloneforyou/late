@@ -77,7 +77,7 @@ async function updateOrCreateDorm (values) {
   }
 
   // Properties that should be pulled from the values object if they exist and applied to the dorm
-  const acceptedFields = ['_thumbnail', 'name', 'key', 'styles', 'roomTypes', 'hasThemeCommunity',
+  const acceptedFields = ['_thumbnail', 'name', 'year', 'key', 'styles', 'roomTypes', 'hasThemeCommunity',
     'isCoEd', 'hasGenderInclusive', 'genderBreakdown', 'hasFloorRestrooms', 'hasRoomRestrooms',
     'hasCleaning', 'cleaningFrequency', 'hasGenderNeutralRestroom', 'furniture', 'amenities', 'closestDiningHall']
   // Properties that should be pulled from the values object and passed to parseInt before applying to dorm
@@ -126,10 +126,8 @@ async function refreshDormData (ctx) {
     return
   }
 
-  console.log(dorms.length)
-
   for (let i = 0; i < dorms.length; i++) {
-    await updateOrCreateDorm(await scrapeForDormBuilding(dorms[i].key))
+    await updateOrCreateDorm({ ...await scrapeForDormBuilding(dorms[i].key), _id: dorms[i]._id })
   }
   ctx.ok()
 }

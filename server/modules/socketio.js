@@ -2,6 +2,11 @@ const Student = require('../api/students/students.model')
 
 const logger = require('./logger')
 
+var position = {
+  x: 0,
+  y: 0
+}
+
 module.exports = server => {
   const sessionCounts = {} // { matraf: 2 }
   let online = [] // [matraf, matraff]
@@ -113,5 +118,27 @@ module.exports = server => {
     socket.on('disconnect', () => {
       logger.debug('Client disconnected from Socket.io')
     })
+
+    /* LATE Game */
+
+    socket.on('move', data => {
+      switch (data) {
+        case 'left':
+          position.x -= 5
+          break
+        case 'right':
+          position.x += 5
+          break
+        case 'up':
+          position.y -= 5
+          break
+        case 'down':
+          position.y += 5
+          break
+      }
+      socket.broadcast.emit('position', position)
+    })
+
+    /* end LATE game */
   })
 }

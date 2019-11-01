@@ -2,9 +2,11 @@ const logger = require('../../../modules/logger')
 const DormReview = require('./dormreviews.model')
 const DormRating = require('../dormratings/dormratings.model')
 const Dorm = require('../dorms.model')
+const mongoose = require('mongoose')
 
 async function getReviews (ctx) {
-  const queryObj = { _dorm: ctx.params.id, hasBeenEdited: false }
+  // Must cast ID to ObjectId: https://github.com/Automattic/mongoose/issues/1399
+  const queryObj = { _dorm: mongoose.Types.ObjectId(ctx.params.id), hasBeenEdited: false }
   if (ctx.query.search) {
     queryObj.$or = [
       { body: new RegExp('.*' + ctx.query.search + '.*', 'i') },
@@ -12,7 +14,19 @@ async function getReviews (ctx) {
     ]
   }
 
-  const reviews = await DormReview.find(queryObj).populate('_previousEdits')
+  let reviews = await DormReview.aggregate()
+    .match(queryObj)
+    .lookup({
+      from: 'DormRating',
+      localField: '_id',
+      foreignField: '_isFor',
+      as: 'rating'
+    })
+    .addFields({
+      rating: { $sum: 'rating' }
+    })
+  reviews = await DormReview.populate(reviews, { path: '_previousEdits' })
+  // const reviews = await DormReview.find(queryObj).populate('_previousEdits')
   ctx.ok({ reviews })
 }
 
@@ -111,7 +125,7 @@ async function voteOnReview (ctx) {
   rating._from = ctx.state.user._id
   rating._isFor = review
   rating.isForType = 'DormReview'
-  rating.value = ctx.request.body.value === 'POSITIVE' ? 'POSITIVE' : 'NEGATIVE'
+  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : -1
   rating.save()
   ctx.noContent()
 }

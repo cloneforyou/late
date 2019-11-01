@@ -131,7 +131,7 @@ async function voteOnQuestion (ctx) {
   rating._from = ctx.state.user._id
   rating._isFor = dq
   rating.isForType = 'DormQuestion'
-  rating.value = ctx.request.body.value === 'POSITIVE' ? 'POSITIVE' : 'NEGATIVE'
+  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : -1
   rating.save()
   ctx.noContent()
 }

@@ -27,6 +27,12 @@
         >
           <a>Calendar</a>
         </router-link>
+        <router-link
+          :to="{name: 'late-invaders'}"
+          tag="li"
+        >
+          <a>Game!</a>
+        </router-link>
       </ul>
     </div>
     <DashboardNextTermPreview v-if="onBreak && nextTerm" />

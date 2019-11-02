@@ -18,19 +18,26 @@ export default {
       }
     }
   },
+  created () {
+    var img = new Image()
+    img.src = './public/img/icons/favicon-32x32.png'
+    this.$socket.$subscribe('position', (data) => {
+      this.position = data
+      this.context.clearRect(0, 0, this.$refs.game.width, this.$refs.game.height)
+      this.context.fillStyle = '#FFFFFF'
+      this.context.fillRect(0, 0, this.$refs.game.width, this.$refs.game.width)
+      this.context.fillStyle = '#000000'
+      this.context.fillRect(this.position.x, this.position.y, 20, 20)
+      this.context.drawImage(img, 50, 50)
+    })
+  },
   mounted () {
     // add listeners
     document.addEventListener('keydown', () => { this.onKeyDown(event) })
 
+    // global canvas context
     this.context = this.$refs.game.getContext('2d')
-    this.$socket.on('position', data => {
-      this.position = data
-      this.context.clearRect(this.$refs.game.width, this.$refs.game.height)
-      this.context.fillstyle = '#FFFFFF'
-      this.fillRect(0, 0, this.$refs.game.width, this.$refs.game.height)
-      this.context.fillstyle = '#000000'
-      this.fillRect(this.position.x, this.position.y, 20, 20)
-    })
+    this.context.imageSmoothingEnabled = false
   },
   methods: {
     onKeyDown (event) {
@@ -50,7 +57,7 @@ export default {
       }
     },
     move (direction) {
-      this.$socket.emit('move', direction)
+      this.$socket.client.emit('move', direction)
     }
   }
 }

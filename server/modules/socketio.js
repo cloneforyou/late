@@ -136,7 +136,7 @@ module.exports = server => {
           position.y += 5
           break
       }
-      socket.broadcast.emit('position', position)
+      io.emit('position', position)
     })
 
     /* end LATE game */

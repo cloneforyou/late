@@ -31,15 +31,16 @@ async function getReviews (ctx) {
     })
     .lookup({ // Populate _author with the author's name and grad year
       from: 'students',
-      let: { authorid: '$_author' },
+      let: { authorid: '$_author', isAnonymous: '$isAnonymous' },
       pipeline: [
         { $match: { $expr: { $eq: ['$$authorid', '$_id'] } } },
-        { $project: { name: 1, graduationYear: 1 } }
+        { $project: { name: 1, graduationYear: 1 } },
+        { $redact: { $cond: [{ $eq: ['$$isAnonymous', true] }, '$$PRUNE', '$$KEEP'] } }
       ],
       as: '_author'
     })
-    .unwind('_author') // Convert _author from array with one element into just object
-  // TODO remove _author if isAnonymous is true
+    // Convert _author from array with one element into just object
+    .unwind({ path: '$_author', preserveNullAndEmptyArrays: true })
 
   // populate _previousEdits to contain the actual edit data and dorm data
   // Author is removed from previous edits as it is implied and simplifies needing to remove it if isAnonymous is true.

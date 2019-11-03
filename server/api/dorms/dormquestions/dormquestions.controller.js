@@ -2,6 +2,7 @@ const logger = require('../../../modules/logger')
 const DormQuestion = require('./dormquestions.model')
 const DormRating = require('../dormratings/dormratings.model')
 const Dorm = require('../dorms.model')
+const mongoose = require('mongoose')
 
 /**
  * Get all the questions that match the provided parameters (search or by dorm ID)
@@ -11,9 +12,10 @@ const Dorm = require('../dorms.model')
  * @returns {Promise<void>}
  */
 async function getQuestions (ctx) {
+  // Must cast ID to ObjectId: https://github.com/Automattic/mongoose/issues/1399
   const queryObj = { hasBeenEdited: false }
   if (ctx.query.dorm) {
-    queryObj._dorm = ctx.query.dorm
+    queryObj._dorm = mongoose.Types.ObjectId(ctx.query.dorm)
   } else {
     queryObj._dorm = null
   }
@@ -22,7 +24,92 @@ async function getQuestions (ctx) {
     queryObj.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
   }
 
-  const questions = await DormQuestion.find(queryObj)
+  // const questions = await DormQuestion.find(queryObj)
+  let questions = await DormQuestion.aggregate()
+    .match(queryObj)
+    .lookup({ // Add dorm question answers
+      from: 'messages',
+      let: { questionId: '$_id' },
+      pipeline: [{
+        $match: { // Match any answers to this question
+          $expr: {
+            $and: [
+              { $eq: ['$_question', '$$questionId'] },
+              { $eq: ['$type', 'DormQuestionAnswer'] },
+              { $eq: ['$hasBeenEdited', false] }
+            ]
+          } }
+      }, {
+        $lookup: { // Fill in the answer's author
+          from: 'students',
+          let: { authorid: '$_author' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$$authorid', '$_id'] } } },
+            { $project: { name: 1, graduationYear: 1 } }
+          ],
+          as: '_author'
+        }
+      }, {
+        $unwind: '$_author'
+      }, {
+        $lookup: { // Fill in previous edits data
+          from: 'messages',
+          let: { editId: '$_previousEdits' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$_id', '$$editId'] } } },
+            { $project: { _author: 0 } } // Remove author from previous edits. It's implied
+          ],
+          as: '_previousEdits'
+        }
+      }, {
+        $lookup: { // Stream ratings for this review into the 'rating' array
+          from: 'dormratings',
+          localField: '_id',
+          foreignField: '_isFor',
+          as: 'rating'
+        }
+      }, {
+        $addFields: { // Reduce the array of ratings into a simple integer value
+          rating: {
+            $reduce: {
+              input: '$rating',
+              initialValue: 0,
+              in: { $add: ['$$value', '$$this.value'] }
+            }
+          }
+        }
+      }
+      ],
+      as: 'answers'
+    })
+    .lookup({ // Stream ratings for this review into the 'rating' array
+      from: 'dormratings',
+      localField: '_id',
+      foreignField: '_isFor',
+      as: 'rating'
+    })
+    .addFields({ // Reduce the array of ratings into a simple integer value
+      rating: { $reduce: {
+        input: '$rating',
+        initialValue: 0,
+        in: { $add: ['$$value', '$$this.value'] }
+      } }
+    })
+    .lookup({ // Populate _author with the author's name and grad year
+      from: 'students',
+      let: { authorid: '$_author' },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$$authorid', '$_id'] } } },
+        { $project: { name: 1, graduationYear: 1 } }
+      ],
+      as: '_author'
+    })
+    .unwind('_author') // Convert _author from array with one element into just object
+  // TODO remove _author if isAnonymous is true
+
+  // populate _previousEdits to contain the actual edit data and dorm data
+  // Author is removed from previous edits as it is implied and simplifies needing to remove it if isAnonymous is true.
+  questions = await DormQuestion.populate(questions, { path: '_previousEdits _dorm', select: '-_author' })
 
   ctx.ok({ questions })
 }
@@ -51,6 +138,7 @@ async function postQuestion (ctx) {
   question.isAnonymous = !!ctx.request.body.isAnonymous
   question.body = ctx.request.body.title
   question._dorm = ctx.request.body.dorm
+  question._author = ctx.state.user._id
 
   await question.save()
   ctx.created()

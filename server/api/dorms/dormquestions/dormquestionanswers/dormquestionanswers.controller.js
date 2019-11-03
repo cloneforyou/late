@@ -15,7 +15,7 @@ async function getAnswersForQuestion (ctx) {
 }
 
 async function postAnswer (ctx) {
-  if (!ctx.request.body.message || ctx.request.bod.message.length < 2) {
+  if (!ctx.request.body.message || ctx.request.body.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
   }
   const q = await DormQuestion.findOne({ _id: ctx.params.id })

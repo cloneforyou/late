@@ -22,6 +22,13 @@ async function getReviews (ctx) {
       foreignField: '_isFor',
       as: 'rating'
     })
+    .addFields({ // Reduce the array of ratings into a simple integer value
+      rating: { $reduce: {
+        input: '$rating',
+        initialValue: 0,
+        in: { $add: ['$$value', '$$this.value'] }
+      } }
+    })
     .lookup({ // Populate _author with the author's name and grad year
       from: 'students',
       let: { authorid: '$_author' },
@@ -31,13 +38,9 @@ async function getReviews (ctx) {
       ],
       as: '_author'
     })
-    .addFields({ // Reduce the array of ratings into a simple integer value
-      rating: { $reduce: {
-        input: '$rating',
-        initialValue: 0,
-        in: { $add: ['$$value', '$$this.value'] }
-      } }
-    })
+    .unwind('_author') // Convert _author from array with one element into just object
+  // TODO remove _author if isAnonymous is true
+
   // populate _previousEdits to contain the actual edit data and dorm data
   // Author is removed from previous edits as it is implied and simplifies needing to remove it if isAnonymous is true.
   reviews = await DormReview.populate(reviews, { path: '_previousEdits _dorm', select: '-_author' })

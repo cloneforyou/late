@@ -20,8 +20,8 @@ async function getQuestions (ctx) {
     queryObj._dorm = null
   }
 
-  if (ctx.query.search) { // FIXME Potential ReDoS vulnerability?
-    queryObj.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
+  if (ctx.query.search) {
+    queryObj.body = new RegExp('.*' + ctx.query.search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '.*', 'i')
   }
 
   // const questions = await DormQuestion.find(queryObj)

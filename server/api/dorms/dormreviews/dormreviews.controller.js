@@ -9,8 +9,8 @@ async function getReviews (ctx) {
   const queryObj = { _dorm: mongoose.Types.ObjectId(ctx.params.id), hasBeenEdited: false }
   if (ctx.query.search) {
     queryObj.$or = [
-      { body: new RegExp('.*' + ctx.query.search + '.*', 'i') },
-      { title: new RegExp('.*' + ctx.query.search + '.*', 'i') }
+      { body: new RegExp('.*' + ctx.query.search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '.*', 'i') },
+      { title: new RegExp('.*' + ctx.query.search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '.*', 'i') }
     ]
   }
 

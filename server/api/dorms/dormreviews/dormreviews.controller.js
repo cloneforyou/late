@@ -7,6 +7,9 @@ const mongoose = require('mongoose')
 async function getReviews (ctx) {
   // Must cast ID to ObjectId: https://github.com/Automattic/mongoose/issues/1399
   const queryObj = { _dorm: mongoose.Types.ObjectId(ctx.params.id), hasBeenEdited: false }
+  if (ctx.query.from) { // Get only IDs greater than the last ID on previous page
+    queryObj._id = { $lt: mongoose.Types.ObjectId(ctx.query.from) }
+  }
   if (ctx.query.search) {
     queryObj.$or = [
       { body: new RegExp('.*' + ctx.query.search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '.*', 'i') },
@@ -16,6 +19,8 @@ async function getReviews (ctx) {
 
   let reviews = await DormReview.aggregate()
     .match(queryObj)
+    .sort({ createdAt: -1 })
+    .limit(Math.abs(parseInt(ctx.query.perPage)) || 20)
     .lookup({ // Stream ratings for this review into the 'rating' array
       from: 'dormratings',
       localField: '_id',

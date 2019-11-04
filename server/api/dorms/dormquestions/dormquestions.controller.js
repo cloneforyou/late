@@ -20,6 +20,9 @@ async function getQuestions (ctx) {
     queryObj._dorm = null
   }
 
+  if (ctx.query.from) { // Get only IDs greater than the last ID on previous page
+    queryObj._id = { $lt: mongoose.Types.ObjectId(ctx.query.from) }
+  }
   if (ctx.query.search) {
     queryObj.body = new RegExp('.*' + ctx.query.search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') + '.*', 'i')
   }
@@ -27,6 +30,8 @@ async function getQuestions (ctx) {
   // const questions = await DormQuestion.find(queryObj)
   let questions = await DormQuestion.aggregate()
     .match(queryObj)
+    .limit(Math.abs(parseInt(ctx.query.perPage)) || 20)
+    .sort({ createdAt: -1 })
     .lookup({ // Add dorm question answers
       from: 'messages',
       let: { questionId: '$_id' },
@@ -39,6 +44,8 @@ async function getQuestions (ctx) {
               { $eq: ['$hasBeenEdited', false] }
             ]
           } }
+      }, {
+        $sort: { createdAt: -1 }
       }, {
         $lookup: { // Fill in the answer's author
           from: 'students',

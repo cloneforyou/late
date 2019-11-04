@@ -146,6 +146,7 @@ async function getDorms (ctx) {
   }
   const dorms = await Dorm.aggregate()
     .match(searchObj)
+    .sort({ name: 1 })
     .lookup({ // Stream ratings for this review into the 'rating' array
       from: 'dormratings',
       localField: '_id',

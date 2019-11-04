@@ -174,6 +174,14 @@ async function editQuestion (ctx) {
   original.save()
   newMessage.save()
 
+  // Update ratings to point to the new message
+  const ratings = await DormRating.find({ _isFor: original._id })
+  if (ratings) {
+    ratings.forEach((r) => {
+      r._isFor = newMessage._id
+      r.save()
+    })
+  }
   ctx.created()
 }
 

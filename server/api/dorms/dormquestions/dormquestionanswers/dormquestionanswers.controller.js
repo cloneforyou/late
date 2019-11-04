@@ -3,17 +3,6 @@ const DormQuestionAnswer = require('./dormquestionanswers.model')
 const DormQuestion = require('../dormquestions.model')
 const DormRating = require('../../dormratings/dormratings.model')
 
-async function getAnswersForQuestion (ctx) {
-  const queryObj = { _question: ctx.params.id, hasBeenEdited: false }
-  if (ctx.query.search) { // fixme ReDoS vulnerability?
-    queryObj.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
-  }
-
-  const answers = await DormQuestionAnswer.find(queryObj)
-
-  ctx.ok({ answers })
-}
-
 async function postAnswer (ctx) {
   if (!ctx.request.body.message || ctx.request.body.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
@@ -55,6 +44,15 @@ async function editAnswer (ctx) {
   original.hasBeenEdited = true
   original.save()
   newAnswer.save()
+
+  // Update ratings to point to the new message
+  const ratings = await DormRating.find({ _isFor: original._id })
+  if (ratings) {
+    ratings.forEach((r) => {
+      r._isFor = newAnswer._id
+      r.save()
+    })
+  }
   ctx.created()
 }
 
@@ -101,13 +99,12 @@ async function voteOnAnswer (ctx) {
   rating._from = ctx.state.user._id
   rating._isFor = ans
   rating.isForType = 'DormQuestionAnswer'
-  rating.value = ctx.request.body.value === 'POSITIVE' ? 'POSITIVE' : 'NEGATIVE'
+  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : -1
   rating.save()
   ctx.noContent()
 }
 
 module.exports = {
-  getAnswersForQuestion,
   postAnswer,
   editAnswer,
   deleteAnswer,

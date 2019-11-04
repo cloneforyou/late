@@ -110,7 +110,7 @@ async function getQuestions (ctx) {
 
   // populate _previousEdits to contain the actual edit data and dorm data
   // Author is removed from previous edits as it is implied and simplifies needing to remove it if isAnonymous is true.
-  questions = await DormQuestion.populate(questions, { path: '_previousEdits _dorm', select: '-_author' })
+  questions = await DormQuestion.populate(questions, { path: '_previousEdits', select: '-_author' })
 
   ctx.ok({ questions })
 }

@@ -44,7 +44,7 @@ async function getReviews (ctx) {
 
   // populate _previousEdits to contain the actual edit data and dorm data
   // Author is removed from previous edits as it is implied and simplifies needing to remove it if isAnonymous is true.
-  reviews = await DormReview.populate(reviews, { path: '_previousEdits _dorm', select: '-_author' })
+  reviews = await DormReview.populate(reviews, { path: '_previousEdits', select: '-_author' })
   ctx.ok({ reviews })
 }
 

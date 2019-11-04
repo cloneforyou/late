@@ -3,9 +3,14 @@ const router = new Router()
 
 const Ctrl = require('./dormquestionanswers.controller')
 
-router.post('/:id', Ctrl.postAnswer)
-router.put('/:id', Ctrl.editAnswer)
-router.delete('/:id', Ctrl.deleteAnswer)
-router.post('/vote/:id', Ctrl.voteOnAnswer)
+const requireLoggedIn = function (ctx, next) {
+  if (!ctx.state.user) return ctx.unauthorized('You must be logged in to do this!')
+  return next()
+}
+
+router.post('/:id', requireLoggedIn, Ctrl.postAnswer)
+router.put('/:id', requireLoggedIn, Ctrl.editAnswer)
+router.delete('/:id', requireLoggedIn, Ctrl.deleteAnswer)
+router.post('/vote/:id', requireLoggedIn, Ctrl.voteOnAnswer)
 
 module.exports = router.routes()

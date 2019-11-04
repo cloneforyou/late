@@ -11,6 +11,11 @@ const requireAdmin = function (ctx, next) {
   return next()
 }
 
+const requireLoggedIn = function (ctx, next) {
+  if (!ctx.state.user) return ctx.unauthorized('You must be logged in to do this!')
+  return next()
+}
+
 // Cannot nest already used routers - See issue https://github.com/ZijianHe/koa-router/issues/244
 // router.use('/photos', require('./dormphotos'))
 router.use('/questions', QuestionsIndex)
@@ -23,7 +28,7 @@ router.post('/photos/:dormPhotoID/confirm', requireAdmin, PhotosCtrl.confirmDorm
 router.delete('/photos/:dormPhotoID', requireAdmin, PhotosCtrl.removeDormPhoto)
 
 router.get('/', Ctrl.getDorms)
-router.post('/vote/:id', Ctrl.voteOnDorm)
+router.post('/vote/:id', requireLoggedIn, Ctrl.voteOnDorm)
 router.get('/refresh', requireAdmin, Ctrl.refreshDormData)
 router.post('/', requireAdmin, Ctrl.createDorm)
 router.put('/:id', requireAdmin, Ctrl.updateDorm)

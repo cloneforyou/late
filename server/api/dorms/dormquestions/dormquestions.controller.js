@@ -20,7 +20,7 @@ async function getQuestions (ctx) {
     queryObj._dorm = null
   }
 
-  if (ctx.query.search) {
+  if (ctx.query.search) { // FIXME Potential ReDoS vulnerability?
     queryObj.body = new RegExp('.*' + ctx.query.search + '.*', 'i')
   }
 

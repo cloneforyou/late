@@ -1,6 +1,8 @@
 const logger = require('../../modules/logger')
 const Dorm = require('./dorms.model')
+const DormRating = require('./dormratings/dormratings.model')
 const { scrapeForDormBuilding } = require('../../modules/dorm_scraping')
+const moment = require('moment')
 
 /**
  * Remove a dorm from the database. Requires body param _id
@@ -142,8 +144,69 @@ async function getDorms (ctx) {
   if (ctx.query.search) { // fixme ReDoS vulnerability?
     searchObj.name = new RegExp('.*' + ctx.query.search + '.*', 'i')
   }
-  const dorms = await Dorm.find(searchObj)
+  const dorms = await Dorm.aggregate()
+    .match(searchObj)
+    .lookup({ // Stream ratings for this review into the 'rating' array
+      from: 'dormratings',
+      localField: '_id',
+      foreignField: '_isFor',
+      as: 'rating'
+    })
+    .addFields({ // Reduce the array of ratings into a simple integer value
+      rating: { $reduce: {
+        input: '$rating',
+        initialValue: 0,
+        in: { $add: ['$$value', '$$this.value'] }
+      } }
+    })
   ctx.ok({ dorms })
+}
+
+async function voteOnDorm (ctx) {
+  // Users can only vote on a certain number of dorms per 90 days. If this user request is to
+  // vote positively or negatively on a dorm, then verify they haven't casted more than 1 non-neutral
+  // votes in the past 90 days.
+  if (ctx.request.body.value !== undefined) {
+    const ratingsFromUser = await DormRating.find({
+      _from: ctx.state.user._id,
+      isForType: 'Dorm',
+      value: { $ne: 0 }
+    })
+    // Using $gte in the query for some reason isn't working... I don't have the energy to fix rn so check in JS instead
+    let ratingsFromUserCount = 0
+    for (let i = 0; i < ratingsFromUser.length; i++) {
+      if (moment().subtract(90, 'days').isBefore(ratingsFromUser[i].createdAt)) {
+        ratingsFromUserCount++
+      }
+    }
+
+    if (ratingsFromUserCount >= 2) {
+      return ctx.unauthorized({ error: 'DORM_VOTE_LIMIT', message: 'You may only vote on 2 dorms every 90 days!' })
+    }
+  }
+
+  const dorm = await Dorm.findOne({ _id: ctx.params.id })
+  if (dorm == null) {
+    return ctx.notFound()
+  }
+  let rating
+
+  rating = await DormRating.findOne({
+    _isFor: ctx.params.id,
+    isForType: 'Dorm',
+    _from: ctx.state.user._id
+  })
+
+  if (rating == null) {
+    rating = new DormRating()
+  }
+
+  rating._from = ctx.state.user._id
+  rating._isFor = dorm
+  rating.isForType = 'Dorm'
+  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : ctx.request.body.value === undefined ? 0 : -1
+  rating.save()
+  ctx.noContent()
 }
 
 module.exports = {
@@ -151,5 +214,6 @@ module.exports = {
   refreshDormData,
   updateDorm,
   deleteDorm,
-  createDorm
+  createDorm,
+  voteOnDorm
 }

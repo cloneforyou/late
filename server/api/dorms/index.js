@@ -23,6 +23,7 @@ router.post('/photos/:dormPhotoID/confirm', requireAdmin, PhotosCtrl.confirmDorm
 router.delete('/photos/:dormPhotoID', requireAdmin, PhotosCtrl.removeDormPhoto)
 
 router.get('/', Ctrl.getDorms)
+router.post('/vote/:id', Ctrl.voteOnDorm)
 router.get('/refresh', requireAdmin, Ctrl.refreshDormData)
 router.post('/', requireAdmin, Ctrl.createDorm)
 router.put('/:id', requireAdmin, Ctrl.updateDorm)

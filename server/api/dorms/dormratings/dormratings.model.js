@@ -6,7 +6,7 @@ const schema = new mongoose.Schema({
     ref: 'Student',
     required: true
   },
-  value: { type: Number, required: true, enum: [1, -1] },
+  value: { type: Number, required: true, enum: [1, 0, -1] },
   _isFor: { // What this rating is for, such as an entire dorm or a specific review of a dorm.
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'isForType',

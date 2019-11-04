@@ -99,7 +99,7 @@ async function voteOnAnswer (ctx) {
   rating._from = ctx.state.user._id
   rating._isFor = ans
   rating.isForType = 'DormQuestionAnswer'
-  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : -1
+  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : ctx.request.body.value === undefined ? 0 : -1
   rating.save()
   ctx.noContent()
 }

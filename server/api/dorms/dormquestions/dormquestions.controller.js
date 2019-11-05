@@ -152,6 +152,13 @@ async function postQuestion (ctx) {
   ctx.created()
 }
 
+/**
+ * Edit the passed question. Requires a question ID as a parameter. Creates a new Message object and adds the old
+ * version to the previousEdits. Also moves all ratings over to point to this new instance. Admins can edit any
+ * question, users can only edit their own.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function editQuestion (ctx) {
   if (ctx.request.body.title && ctx.request.body.title.length < 5) {
     return ctx.badRequest('Please provide a longer question title')
@@ -192,6 +199,12 @@ async function editQuestion (ctx) {
   ctx.created()
 }
 
+/**
+ * Delete a question. Requires a question ID as a parameter. Does not delete ratings, however it does delete
+ * previous versions of this message (_previousEdits). Admins can delete any question, users can only delete their own.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function deleteQuestion (ctx) {
   const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only delete their own questions unless they're admin
@@ -215,6 +228,12 @@ async function deleteQuestion (ctx) {
   ctx.noContent()
 }
 
+/**
+ * Vote on a question either positively, negatively, or neutrally. A cumulative score is sent to the client of
+ * all ratings added together when they GET all questions.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function voteOnQuestion (ctx) {
   const dq = await DormQuestion.findOne({ _id: ctx.params.id })
   if (dq == null) {

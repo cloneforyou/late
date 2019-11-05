@@ -163,6 +163,12 @@ async function getDorms (ctx) {
   ctx.ok({ dorms })
 }
 
+/**
+ * Vote on a dorm either positively, negatively, or neutrally. A cumulative score is sent to the client of
+ * all ratings added together. Users may only vote on 2 dorms every 90 days.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function voteOnDorm (ctx) {
   // Users can only vote on a certain number of dorms per 90 days. If this user request is to
   // vote positively or negatively on a dorm, then verify they haven't casted more than 1 non-neutral

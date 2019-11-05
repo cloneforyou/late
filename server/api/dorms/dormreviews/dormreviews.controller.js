@@ -4,6 +4,13 @@ const DormRating = require('../dormratings/dormratings.model')
 const Dorm = require('../dorms.model')
 const mongoose = require('mongoose')
 
+/**
+ * Get all reviews in order of newest to oldest. Supports pagination (from=ObjectId & perPage=Number).
+ * A dorm ID is required as a parameter. A cumulative rating, author name & grad year, and previous edits
+ * are filled via aggregation.
+ * @param ctx {Koa context}
+ * @returns {Promise<void>}
+ */
 async function getReviews (ctx) {
   // Must cast ID to ObjectId: https://github.com/Automattic/mongoose/issues/1399
   const queryObj = { _dorm: mongoose.Types.ObjectId(ctx.params.id), hasBeenEdited: false }
@@ -53,6 +60,12 @@ async function getReviews (ctx) {
   ctx.ok({ reviews })
 }
 
+/**
+ * Post a review of a dorm. Requires a dorm ID in the body. body.title must be at least 5 characters, and
+ * body.body must be at least 20 characters.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function postReview (ctx) {
   if (!ctx.request.body.title || !ctx.request.body.body ||
     ctx.request.body.title.length < 5 || ctx.request.body.body.length < 20) {
@@ -72,6 +85,13 @@ async function postReview (ctx) {
   ctx.created()
 }
 
+/**
+ * Edit the passed review. Requries a review ID as a parameter. Creates a new Message object and adds the old version
+ * to the previousEdits. Also moves all ratings over to point to this new instance. Admins can edit any review,
+ * users can only edit their own.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function editReview (ctx) {
   if (ctx.request.body.title && ctx.request.body.title.length < 5) {
     return ctx.badRequest('Please provide a longer title')
@@ -115,6 +135,12 @@ async function editReview (ctx) {
   ctx.created()
 }
 
+/**
+ * Delete a review. Requires a review ID as a parameter. Does not delete ratings, however it does delete
+ * previous versions of this message (_previousEdits). Admins can delete any review, users can only delete their own.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function deleteReview (ctx) {
   const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // If the user isn't admin then they can only delete their own reviews
@@ -138,6 +164,12 @@ async function deleteReview (ctx) {
   ctx.noContent()
 }
 
+/**
+ * Vote on a review either positively, negatively, or neutrally. A cumulative score is sent to the client of
+ * all ratings added together when they GET all reviews.
+ * @param ctx {Koa context}
+ * @returns {Promise<*>}
+ */
 async function voteOnReview (ctx) {
   const review = await DormReview.findOne({ _id: ctx.params.id })
   if (review == null) {

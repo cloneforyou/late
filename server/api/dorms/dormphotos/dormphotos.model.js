@@ -3,13 +3,17 @@ const Schema = mongoose.Schema
 
 const schema = new Schema(
   {
-    _student: {
+    _author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Student'
     },
+    _dorm: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Dorm'
+    },
+    isAnonymous: { type: Boolean, default: true },
     imageURL: { type: String, required: true },
-    dormKey: { type: String, minlength: 3, maxlength: 100, required: true }, // the key of the dorm building
-    style: { type: String, enum: ['single', 'double', 'triple'], required: true }, // the room style
+    description: { type: String, minlength: 5, maxlength: 200 },
     confirmed: { type: Boolean, default: false } // whether or not the photo has been confirmed by admins and can be displayed
   },
   { timestamps: true }

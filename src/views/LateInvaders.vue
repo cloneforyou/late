@@ -31,15 +31,52 @@ export default {
       position: {
         x: 20,
         y: 20
-      }
+      },
+      players: []
     }
   },
   created () {
     // init image
     this.img.src = './late.png'
 
-    this.$socket.$subscribe('position', (data) => {
+    this.$socket.$subscribe('player movement send', data => {
+      for (var i = 0; i < this.players.length; i++) {
+        if (this.players[i].id === data.id) {
+          switch (data.direction) {
+            case 'left':
+              this.players[i].direction.left = data.cond
+              break
+            case 'right':
+              this.players[i].direction.right = data.cond
+              console.log(this.players[i].direction.right)
+              break
+            case 'up':
+              this.players[i].direction.up = data.cond
+              break
+            case 'down':
+              this.players[i].direction.down = data.cond
+              break
+          }
+          console.log(this.players[i].direction.right)
+          return
+        }
+      }
+    })
 
+    this.$socket.$subscribe('player spawned', data => {
+      this.players.push({
+        id: data.id,
+        direction: {
+          left: false,
+          right: false,
+          up: false,
+          down: false
+        },
+        position: {
+          x: data.x,
+          y: data.y
+        }
+      })
     })
   },
   mounted () {
@@ -50,6 +87,8 @@ export default {
     // global canvas context
     this.context = this.$refs.game.getContext('2d')
     this.context.imageSmoothingEnabled = true
+
+    this.sendPlayerSpawn()
 
     // start game loop
     setInterval(this.gameLoop, this.FPS)
@@ -64,6 +103,32 @@ export default {
       this.context.clearRect(0, 0, 1280, 720)
       this.context.fillStyle = '#FFFFFF'
       this.context.fillRect(0, 0, 1280, 720)
+
+      // handling other players
+      for (var i = 0; i < this.players.length; i++) {
+        let id = this.players[i].id
+        let x = this.players[i].position.x
+        let y = this.players[i].position.y
+
+        // position
+        if (this.players[i].direction.left) x -= 3
+        if (this.players[i].direction.right) x += 3
+        if (this.players[i].direction.up) y -= 3
+        if (this.players[i].direction.down) y += 3
+
+        // rendering
+        this.context.fillStyle = '#000000'
+        this.context.font = '20px serif'
+        this.context.fillText(id, x, y - 5)
+        this.context.drawImage(this.img, x, y, 50, 50)
+
+        this.players[i].position.x = x
+        this.players[i].position.y = y
+      }
+
+      this.context.fillStyle = '#000000'
+      this.context.font = '20px serif'
+      this.context.fillText(this.user.rcs_id, this.position.x, this.position.y - 5)
       this.context.drawImage(this.img, this.position.x, this.position.y, 50, 50)
     },
     onKeyDown (event) {
@@ -71,7 +136,7 @@ export default {
       if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1) event.preventDefault()
 
       switch (event.code) {
-        case 'ArrowLeft':
+        case 'KeyA':
           if (!this.keys.left) {
             this.direction.right = false
             this.direction.left = true
@@ -79,7 +144,7 @@ export default {
             this.sendMovementUpdate('left', true)
           }
           break
-        case 'ArrowRight':
+        case 'KeyD':
           if (!this.keys.right) {
             this.direction.left = false
             this.direction.right = true
@@ -87,7 +152,7 @@ export default {
             this.sendMovementUpdate('right', true)
           }
           break
-        case 'ArrowUp':
+        case 'KeyW':
           if (!this.keys.up) {
             this.direction.down = false
             this.direction.up = true
@@ -95,7 +160,7 @@ export default {
             this.sendMovementUpdate('up', true)
           }
           break
-        case 'ArrowDown':
+        case 'KeyS':
           if (!this.keys.down) {
             this.direction.up = false
             this.direction.down = true
@@ -111,22 +176,22 @@ export default {
       this.keyFired = false
 
       switch (event.code) {
-        case 'ArrowLeft':
+        case 'KeyA':
           this.direction.left = false
           this.keys.left = false
           this.sendMovementUpdate('left', false)
           break
-        case 'ArrowRight':
+        case 'KeyD':
           this.direction.right = false
           this.keys.right = false
           this.sendMovementUpdate('right', false)
           break
-        case 'ArrowUp':
+        case 'KeyW':
           this.direction.up = false
           this.keys.up = false
           this.sendMovementUpdate('up', false)
           break
-        case 'ArrowDown':
+        case 'KeyS':
           this.direction.down = false
           this.keys.down = false
           this.sendMovementUpdate('down', false)
@@ -134,7 +199,11 @@ export default {
       }
     },
     sendMovementUpdate (dir, cond) {
-      this.$socket.client.emit('player movement update', { id: this.rcis_id, direction: dir, cond: cond })
+      this.$socket.client.emit('player movement update', { id: this.user.rcs_id, direction: dir, cond: cond })
+    },
+    sendPlayerSpawn () {
+      // send spawn event to server
+      this.$socket.client.emit('player spawn update', { id: this.user.rcs_id, x: this.position.x, y: this.position.y })
     }
   }
 }

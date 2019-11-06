@@ -2,6 +2,8 @@ const Student = require('../api/students/students.model')
 
 const logger = require('./logger')
 
+var players = []
+
 module.exports = server => {
   const sessionCounts = {} // { matraf: 2 }
   let online = [] // [matraf, matraff]
@@ -116,8 +118,16 @@ module.exports = server => {
 
     /* LATE Game */
 
-    socket.on('player movement', data => {
-      io.emit('position')
+    socket.on('player movement update', data => {
+      socket.broadcast.emit('player movement send', data)
+    })
+
+    socket.on('player spawn update', data => {
+      for (var i = 0; i < players.length; i++) {
+        socket.emit('player spawned', players[i])
+      }
+      socket.broadcast.emit('player spawned', data)
+      players.push(data)
     })
 
     /* end LATE game */

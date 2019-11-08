@@ -71,6 +71,9 @@ async function postReview (ctx) {
     ctx.request.body.title.length < 5 || ctx.request.body.body.length < 20) {
     return ctx.badRequest('Please provide a longer title and/or review')
   }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
+  }
 
   const d = await Dorm.findOne({ _id: ctx.params.id })
   if (d == null) {
@@ -103,6 +106,9 @@ async function editReview (ctx) {
   const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only edit their own reviews unless they're admin
     searchObj._author = ctx.state.user._id
+  }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
   }
   const original = await DormReview.findOne(searchObj)
   if (original == null) {

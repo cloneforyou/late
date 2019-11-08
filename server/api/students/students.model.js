@@ -31,6 +31,9 @@ const schema = new Schema(
         maxlength: 100
       }
     },
+    // If this is true then this user has been BANNED from
+    // posting public messages/images until the specified date. Shame!
+    bannedFromPostingUntil: { type: Date, default: new Date(2000, 1, 1) },
     rcs_id: { // The only value we get from RPI CAS when a user logs in; This is the main way to identify users
       type: String,
       lowercase: true,

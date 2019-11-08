@@ -13,6 +13,9 @@ async function postAnswer (ctx) {
   if (!ctx.request.body.message || ctx.request.body.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
   }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
+  }
   const q = await DormQuestion.findOne({ _id: ctx.params.id })
   if (q == null) {
     return ctx.notFound()
@@ -35,6 +38,9 @@ async function postAnswer (ctx) {
 async function editAnswer (ctx) {
   if (!ctx.request.body.message || ctx.request.body.message.length < 2) {
     return ctx.badRequest('Please provide a longer answer.')
+  }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
   }
   const searchObj = { _id: ctx.params.id }
   if (!ctx.state.user.admin) { // Users can only edit their own answers unless they're admin

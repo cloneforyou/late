@@ -135,6 +135,9 @@ async function postQuestion (ctx) {
   if (!ctx.request.body.title || ctx.request.body.title.length < 5) {
     return ctx.badRequest('Please provide a longer question title')
   }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
+  }
   // If a dorm is provided then make sure it exists
   if (ctx.request.body.dorm) {
     const d = await Dorm.findOne({ _id: ctx.request.body.dorm })
@@ -162,6 +165,9 @@ async function postQuestion (ctx) {
 async function editQuestion (ctx) {
   if (ctx.request.body.title && ctx.request.body.title.length < 5) {
     return ctx.badRequest('Please provide a longer question title')
+  }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
   }
 
   const searchObj = { _id: ctx.params.id }

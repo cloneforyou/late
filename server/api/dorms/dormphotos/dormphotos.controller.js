@@ -119,6 +119,9 @@ async function postPhoto (ctx) {
   if (!ctx.request.files || !ctx.request.files.photo) {
     return ctx.badRequest('You did not upload a photo!')
   }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
+  }
 
   const { url } = await uploadFile(ctx.params.id, ctx.request.files.photo)
 
@@ -152,6 +155,9 @@ async function editPhoto (ctx) {
   const searchObj = { _id: mongoose.Types.ObjectId(ctx.params.id) }
   if (!ctx.state.user || !ctx.state.user.admin) {
     searchObj._author = ctx.state.user._id
+  }
+  if (ctx.state.user.bannedFromPostingUntil > new Date()) {
+    return ctx.unauthorized('You are currently banned from posting publicly!')
   }
   const photo = await DormPhoto.findOne(searchObj)
 

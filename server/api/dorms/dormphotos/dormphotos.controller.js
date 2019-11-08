@@ -25,14 +25,14 @@ async function uploadFile (dormId, { name: fileName, path }) {
   const acceptedFileTypes = ['png', 'jpg', 'jpeg', 'tiff', 'gif']
   const splitFileName = fileName.split('.')
   if (splitFileName.length < 2 || !acceptedFileTypes.includes(splitFileName[splitFileName.length - 1])) {
-    return new Error('Unsupported file type')
+    throw new Error('Unsupported file type')
   }
 
   // Verify magic number
   const acceptedMimes = ['image/png', 'image/jpeg', 'image/tiff', 'image/gif']
   const magicNumberType = fileType(await readChunk(path, 0, fileType.minimumBytes)).mime
   if (!acceptedMimes.includes(magicNumberType)) {
-    return new Error('Unsupported file type')
+    throw new Error('Unsupported file type')
   }
 
   // Resize twice to require images are resized & avoid security hole by rewriting entire image

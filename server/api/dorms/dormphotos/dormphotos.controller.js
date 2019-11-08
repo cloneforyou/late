@@ -1,4 +1,3 @@
-const fs = require('fs').promises
 const aws = require('aws-sdk')
 const s3 = new aws.S3()
 const mongoose = require('mongoose')
@@ -181,10 +180,6 @@ async function deletePhoto (ctx) {
   if (!ctx.state.user.admin) { // Users can only delete their own questions unless they're admin
     searchObj._author = ctx.state.user._id
   }
-  const dp = await DormPhoto.findOne(searchObj)
-  if (dp == null) {
-    return ctx.notFound()
-  }
 
   const photo = await DormPhoto.findOne(searchObj)
   if (photo == null) {
@@ -196,6 +191,8 @@ async function deletePhoto (ctx) {
     Bucket: 'late-dorm-photos',
     Key: parts[parts.length - 1]
   }).promise()
+
+  await photo.remove()
 
   logger.info(`${ctx.state.user.identifier} deleted a dorm photo`)
   ctx.noContent()

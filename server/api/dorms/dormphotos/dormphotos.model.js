@@ -5,15 +5,17 @@ const schema = new Schema(
   {
     _author: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Student'
+      ref: 'Student',
+      required: true
     },
     _dorm: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Dorm'
+      ref: 'Dorm',
+      required: true
     },
     isAnonymous: { type: Boolean, default: true },
     imageURL: { type: String, required: true },
-    description: { type: String, minlength: 5, maxlength: 200 },
+    description: { type: String, maxlength: 200, default: '' },
     confirmed: { type: Boolean, default: false } // whether or not the photo has been confirmed by admins and can be displayed
   },
   { timestamps: true }

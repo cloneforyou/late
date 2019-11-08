@@ -1,28 +1,46 @@
-const fs = require('fs')
+const fs = require('fs').promises
 const aws = require('aws-sdk')
 const s3 = new aws.S3()
+const mongoose = require('mongoose')
 const logger = require('../../../modules/logger')
+const fileType = require('file-type')
+const readChunk = require('read-chunk')
 
 const sharp = require('sharp')
 
 const uuidv4 = require('uuid/v4')
 
 const DormPhoto = require('./dormphotos.model')
+const DormRating = require('../dormratings/dormratings.model')
 
-const uploadFile = async (dormKey, style, { name: fileName, path: filePath, type: fileType }) => {
+async function uploadFile (dormId, { name: fileName, path, type }) {
+  // Verify file extension
+  const acceptedFileTypes = ['png', 'jpg', 'jpeg', 'tiff', 'gif']
+  const splitFileName = fileName.split('.')
+  if (splitFileName.length < 2 || !acceptedFileTypes.includes(splitFileName[splitFileName.length - 1])) {
+    return new Error('Unsupported file type')
+  }
+
+  // Verify magic number
+  const acceptedMimes = ['image/png', 'image/jpeg', 'image/tiff', 'image/gif']
+  if (!acceptedMimes.includes(fileType(await readChunk(path, 0, fileType.minimumBytes)).mime)) {
+    return new Error('Unsupported file type')
+  }
+
+  // Resize twice to require images are resized & avoid security hole by rewriting entire image
+  const resizedPhoto = await sharp(path)
+    .resize(1001)
+    .resize(1000)
+    .toBuffer()
+
   return new Promise((resolve, reject) => {
-    const stream = fs.createReadStream(filePath)
-    stream.on('error', function (err) {
-      reject(err)
-    })
-    const resizeTransform = sharp().resize(1000)
     s3.upload(
       {
         ACL: 'public-read',
         Bucket: 'late-dorm-photos',
-        Body: stream.pipe(resizeTransform),
-        Key: `dorm-photo-${dormKey}-${style}-${uuidv4()}`,
-        ContentType: fileType
+        Body: resizedPhoto,
+        Key: `dorm-photo-${dormId}-${uuidv4()}`,
+        ContentType: type
       },
       function (err, data) {
         if (err) {
@@ -35,58 +53,70 @@ const uploadFile = async (dormKey, style, { name: fileName, path: filePath, type
   })
 }
 
-async function getDormPhotos (ctx) {
-  let dormPhotos
+/**
+ *
+ * @param ctx
+ * @returns {Promise<void>}
+ */
+async function getPhotosForDorm (ctx) {
+  const searchObj = { _dorm: mongoose.Types.ObjectId(ctx.params.id) }
 
-  const query = {
-    confirmed: true
-  }
-
-  if ('dormKey' in ctx.query) {
-    query.dormKey = ctx.query.dormKey
-  }
-
-  if (ctx.state.user && ctx.state.user.admin && 'confirmed' in ctx.query) {
-    query.confirmed = ctx.query.confirmed
-  }
-
-  try {
-    dormPhotos = await DormPhoto.find(query)
-  } catch (e) {
-    logger.error(`Failed to get dorm photos: ${e}`)
-    return ctx.internalServerError('There was an issue grabbing the dorm photos.')
-  }
-
-  if (ctx.query.count) {
-    const dormKeys = {}
-    for (const dormPhoto of dormPhotos) {
-      if (!dormKeys[dormPhoto.dormKey]) dormKeys[dormPhoto.dormKey] = 0
-      dormKeys[dormPhoto.dormKey] += 1
+  // Give the user only approved photos or their own, unless they're admin
+  if (ctx.state.user) {
+    if (!ctx.state.user.admin) {
+      searchObj.$or = [{ confirmed: true }, { _author: ctx.state.user._id }]
     }
-    ctx.ok({ counts: dormKeys })
   } else {
-    ctx.ok({ dormPhotos })
+    searchObj.confirmed = true
   }
+
+  const photos = await DormPhoto.aggregate()
+    .match(searchObj)
+    .lookup({
+      from: 'students',
+      let: { authorid: '$_author', isAnonymous: '$_isAnonymous' },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$$authorid', '$_id'] } } },
+        { $project: { name: 1, graduationYear: 1 } },
+        { $redact: { $cond: [{ $eq: ['$$isAnonymous', true] }, '$$PRUNE', '$$KEEP'] } }
+      ],
+      as: '_author'
+    })
+    .lookup({ // Stream ratings for this review into the 'rating' array
+      from: 'dormratings',
+      localField: '_id',
+      foreignField: '_isFor',
+      as: 'rating'
+    })
+    .addFields({ // Reduce the array of ratings into a simple integer value
+      rating: { $reduce: {
+        input: '$rating',
+        initialValue: 0,
+        in: { $add: ['$$value', '$$this.value'] }
+      } }
+    })
+
+  ctx.ok({ photos })
 }
 
-async function uploadDormPhoto (ctx) {
-  if (!ctx.request.files.photo) {
+/**
+ *
+ * @param ctx
+ * @returns {Promise<*>}
+ */
+async function postPhoto (ctx) {
+  if (!ctx.request.files || !ctx.request.files.photo) {
     return ctx.badRequest('You did not upload a photo!')
   }
 
-  const { dormKey, style } = ctx.request.body
-
-  if (!dormKey) {
-    return ctx.badRequest('You did not specify the dorm!')
-  }
-
-  const { key, url } = await uploadFile(dormKey, style, ctx.request.files.photo)
+  const { url } = await uploadFile(ctx.params.id, ctx.request.files.photo)
 
   const newDormPhoto = new DormPhoto({
-    _student: ctx.state.user, // might be none
+    _author: ctx.state.user._id,
+    _dorm: ctx.params.id,
     imageURL: url,
-    dormKey,
-    style,
+    isAnonymous: !!ctx.request.body.isAnonymous,
+    description: ctx.request.body.description,
     confirmed: false
   })
 
@@ -96,74 +126,105 @@ async function uploadDormPhoto (ctx) {
     logger.error(`Failed to upload dorm photo: ${e}`)
     return ctx.badRequest('There was an issue saving the photo!')
   }
-
-  logger.info(`New dorm photo submission for ${dormKey} ${style} room`)
-
-  ctx.ok({ newDormPhoto })
+  logger.info(`${ctx.state.user.identifier} posted a dorm photo for dorm ${ctx.params.id}`)
+  ctx.created({ photo: newDormPhoto })
 }
 
-async function confirmDormPhoto (ctx) {
-  const { dormPhotoID } = ctx.params
-
-  let confirmedDormPhoto
-
-  try {
-    confirmedDormPhoto = await DormPhoto.findOne({ _id: dormPhotoID })
-  } catch (e) {
-    logger.error(`Failed to get dorm photo submission: ${e}`)
-    return ctx.badRequest('There was an issue getting the dorm photo')
+/**
+ * Edit a given photo's description or anonymous/confirmed status. Admins are able to edit any photo but
+ * users can only edit their own. Only admins can edit the confirmed status of a photo.
+ * @param ctx {Koa context} Requires a URL id parameter which is the ID of the photo. If the body parameters
+ * isAnonymous, description, and/or confirmed are defined, then the photo
+ * @returns {Promise<*>}
+ */
+async function editPhoto (ctx) {
+  const searchObj = { _id: mongoose.Types.ObjectId(ctx.params.id) }
+  if (!ctx.state.user || !ctx.state.user.admin) {
+    searchObj._author = ctx.state.user._id
   }
+  const photo = await DormPhoto.findOne(searchObj)
 
-  if (!confirmedDormPhoto) {
-    logger.error(`Failed to find dorm photo submission ${dormPhotoID}`)
-    return ctx.notFound(`Could not find dorm photo submission!`)
+  if (photo == null) {
+    return ctx.notFound()
   }
+  logger.info(`${ctx.state.user.identifier} edited a dorm photo`)
 
-  confirmedDormPhoto.confirmed = true
-
-  await confirmedDormPhoto.save()
-
-  logger.info(`${ctx.state.user.identifier} confirmed a dorm photo submission`)
-
-  return ctx.created({ confirmedDormPhoto })
+  photo.isAnonymous = ctx.request.body.isAnonymous === undefined ? photo.isAnonymous : !!ctx.request.body.isAnonymous
+  photo.description = ctx.request.body.description === undefined ? photo.description : ctx.request.body.description
+  if (ctx.state.user.admin) { // Only admins can edit confirmed status
+    photo.confirmed = ctx.request.body.confirmed === undefined ? photo.confirmed : !!ctx.request.body.confirmed
+  }
+  photo.save()
+  ctx.noContent()
 }
 
-async function removeDormPhoto (ctx) {
-  const { dormPhotoID } = ctx.params
-
-  let removedDormPhoto
-  try {
-    removedDormPhoto = await DormPhoto.findOne({ _id: dormPhotoID })
-  } catch (e) {
-    logger.error(`Failed to get dorm photo submission: ${e}`)
-    return ctx.badRequest('There was an issue getting the dorm photo')
+/**
+ * Delete a photo from the database and from the dorm photos file system. Admins can delete any photo, users can
+ * only delete their own.
+ * @param ctx {Koa context} Requires an id URL parameter, which is the photo's ID. Assumes ctx.state.user is defined.
+ * @returns {Promise<*>}
+ */
+async function deletePhoto (ctx) {
+  const searchObj = { _id: ctx.params.id }
+  if (!ctx.state.user.admin) { // Users can only delete their own questions unless they're admin
+    searchObj._author = ctx.state.user._id
+  }
+  const dp = await DormPhoto.findOne(searchObj)
+  if (dp == null) {
+    return ctx.notFound()
   }
 
-  if (!removeDormPhoto) {
-    logger.error(`Failed to find dorm photo submission ${dormPhotoID}`)
-    return ctx.notFound(`Could not find dorm photo submission!`)
+  const photo = await DormPhoto.findOne(searchObj)
+  if (photo == null) {
+    return ctx.notFound()
   }
 
-  const parts = removedDormPhoto.imageURL.split('/')
-  const Key = parts[parts.length - 1]
-
+  const parts = photo.imageURL.split('/')
   await s3.deleteObject({
     Bucket: 'late-dorm-photos',
-    Key
+    Key: parts[parts.length - 1]
   }).promise()
 
-  removedDormPhoto.remove()
+  logger.info(`${ctx.state.user.identifier} deleted a dorm photo`)
+  ctx.noContent()
+}
 
-  logger.info(`${ctx.state.user.identifier} denied a dorm photo submission`)
+/**
+ * Submit a positive, neutral, or negative vote on a submitted photo.
+ * @param ctx {Koa context}. Requires an id URL parameter, which is the ID of the photo to vote on.
+ * Assumes that ctx.state.user is defined. If ctx.request.body.value is "POSITIVE", then the vote is positive.
+ * If it is absent, then the vote is neutral (remove vote). If it is anything else then the vote is negative.
+ * @returns {Promise<*>}
+ */
+async function voteOnPhoto (ctx) {
+  const dp = await DormPhoto.findOne({ _id: ctx.params.id })
+  if (dp == null) {
+    return ctx.notFound()
+  }
+  let rating
 
-  ctx.ok({
-    removedDormPhoto
+  rating = await DormRating.findOne({
+    _isFor: ctx.params.id,
+    isForType: 'DormPhoto',
+    _from: ctx.state.user._id
   })
+
+  if (rating == null) {
+    rating = new DormRating()
+  }
+
+  rating._from = ctx.state.user._id
+  rating._isFor = dp
+  rating.isForType = 'DormPhoto'
+  rating.value = ctx.request.body.value === 'POSITIVE' ? 1 : ctx.request.body.value === undefined ? 0 : -1
+  rating.save()
+  ctx.noContent()
 }
 
 module.exports = {
-  getDormPhotos,
-  uploadDormPhoto,
-  confirmDormPhoto,
-  removeDormPhoto
+  getPhotosForDorm,
+  postPhoto,
+  editPhoto,
+  deletePhoto,
+  voteOnPhoto
 }

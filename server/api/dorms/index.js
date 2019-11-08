@@ -21,11 +21,11 @@ const requireLoggedIn = function (ctx, next) {
 router.use('/questions', QuestionsIndex)
 router.use('/reviews', ReviewsIndex)
 
-router.get('/photos/', PhotosCtrl.getDormPhotos)
-// router.get('/photos/:dormPhotoID', PhotosCtrl.getDormPhoto)
-router.post('/photos/', PhotosCtrl.uploadDormPhoto)
-router.post('/photos/:dormPhotoID/confirm', requireAdmin, PhotosCtrl.confirmDormPhoto)
-router.delete('/photos/:dormPhotoID', requireAdmin, PhotosCtrl.removeDormPhoto)
+router.get('/photos/:id', PhotosCtrl.getPhotosForDorm)
+router.post('/photos/:id', requireLoggedIn, PhotosCtrl.postPhoto)
+router.post('/photos/vote/:id', requireLoggedIn, PhotosCtrl.voteOnPhoto)
+router.put('/photos/:id', requireLoggedIn, PhotosCtrl.editPhoto)
+router.delete('/photos/:id', requireLoggedIn, PhotosCtrl.deletePhoto)
 
 router.get('/', Ctrl.getDorms)
 router.post('/vote/:id', requireLoggedIn, Ctrl.voteOnDorm)

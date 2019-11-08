@@ -13,7 +13,14 @@ const uuidv4 = require('uuid/v4')
 const DormPhoto = require('./dormphotos.model')
 const DormRating = require('../dormratings/dormratings.model')
 
-async function uploadFile (dormId, { name: fileName, path, type }) {
+/**
+ * Helper function that handles image processing and saving to the file system.
+ * @param dormId ID of the dorm this file belongs to
+ * @param fileName Name of the uploaded file
+ * @param path Temporary path to the file
+ * @returns {Promise<unknown>}
+ */
+async function uploadFile (dormId, { name: fileName, path }) {
   // Verify file extension
   const acceptedFileTypes = ['png', 'jpg', 'jpeg', 'tiff', 'gif']
   const splitFileName = fileName.split('.')
@@ -23,7 +30,8 @@ async function uploadFile (dormId, { name: fileName, path, type }) {
 
   // Verify magic number
   const acceptedMimes = ['image/png', 'image/jpeg', 'image/tiff', 'image/gif']
-  if (!acceptedMimes.includes(fileType(await readChunk(path, 0, fileType.minimumBytes)).mime)) {
+  const magicNumberType = fileType(await readChunk(path, 0, fileType.minimumBytes)).mime
+  if (!acceptedMimes.includes(magicNumberType)) {
     return new Error('Unsupported file type')
   }
 
@@ -40,7 +48,7 @@ async function uploadFile (dormId, { name: fileName, path, type }) {
         Bucket: 'late-dorm-photos',
         Body: resizedPhoto,
         Key: `dorm-photo-${dormId}-${uuidv4()}`,
-        ContentType: type
+        ContentType: magicNumberType
       },
       function (err, data) {
         if (err) {
@@ -54,8 +62,10 @@ async function uploadFile (dormId, { name: fileName, path, type }) {
 }
 
 /**
- *
- * @param ctx
+ * Get all photos for a given dorm
+ * @param ctx {Koa context} ctx.params.id is required and is the dorm's ID which to get photos for. If the user
+ * is admin, all photos are retrieved. If the user is not admin, only confirmed OR their own photos are retrieved.
+ * Photo rating and author data is aggregated.
  * @returns {Promise<void>}
  */
 async function getPhotosForDorm (ctx) {
@@ -100,8 +110,10 @@ async function getPhotosForDorm (ctx) {
 }
 
 /**
- *
- * @param ctx
+ * Upload a photo for a given dorm.
+ * @param ctx {Koa context} ctx.state.user is assumed to be defined. ctx.request.files.photo is required
+ * and must also be a valid image. The image is resized in order to sanitize. ctx.request.body.isAnonymous and
+ * ctx.request.body.description are also used. ctx.params.id is the dorm's ID to post this for and is required.
  * @returns {Promise<*>}
  */
 async function postPhoto (ctx) {

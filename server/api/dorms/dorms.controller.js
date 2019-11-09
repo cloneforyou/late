@@ -147,6 +147,16 @@ async function getDorms (ctx) {
   const dorms = await Dorm.aggregate()
     .match(searchObj)
     .sort({ name: 1 })
+    .lookup({ // Get the dorm photo thumbnail URL for this dorm
+      from: 'dormphotos',
+      let: { thumbnailId: '$_thumbnail' },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$$thumbnailId', '$_id'] } } },
+        { $project: { imageURL: 1 } }
+      ],
+      as: '_thumbnail'
+    })
+    .unwind('_thumbnail')
     .lookup({ // Stream ratings for this review into the 'rating' array
       from: 'dormratings',
       localField: '_id',

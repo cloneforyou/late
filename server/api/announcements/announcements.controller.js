@@ -2,102 +2,78 @@ const Announcement = require('./announcements.model')
 const logger = require('../../modules/logger')
 
 /**
- * Fetches all existing announcements
- * @param {Koa context} ctx
- * @retuns A JSON list of announcements
+ * Get a list of announcements
+ * @returns {Promise<Aggregate<Announcement[]>>} An array of Announcement objects
  */
-async function getAnnouncements (ctx) {
-  const announcements = await Announcement.find()
-    .populate('_student')
-    .sort('-createdAt')
-  return ctx.ok({ announcements })
+async function getAnnouncements () {
+  return Announcement.aggregate()
+    .lookup({
+      from: 'students',
+      let: { studentId: '$_student' },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$$studentId', '$_id'] } } },
+        { $project: { name: 1 } }
+      ],
+      as: '_student'
+    })
 }
 
 /**
- * Saves a new announcement.
- * Request body:
- *  - title: title of the announcement
- *  - body: the announcement text
- *  - isPinned (optional): whether or not to pin the announcement
- * @param {Koa context} ctx
+ * Save an announcement. Assumes the provided _student has permission to create an announcement.
+ * @param params {{_student: {_id: Object} | String, isPinned?: boolean, title: String, body: String}}
+ *    Announcement Schema parameters
+ * @returns {Promise<Announcement>} The created announcement object.
+ *    Not sanitized! May include sensitive user info in _student.
+ * @throws Error if the announcement failed to save.
  */
-async function createAnnouncement (ctx) {
-  if (!ctx.state.user.admin) {
-    return ctx.forbidden('You are not an administrator!')
-  }
-
-  const { title, body, isPinned } = ctx.request.body
+async function createAnnouncement (params) {
   const createdAnnouncement = Announcement({
-    _student: ctx.state.user._id,
-    title,
-    body,
-    isPinned
+    ...params
   })
-  try {
-    await createdAnnouncement.save()
-  } catch (e) {
-    logger.error(
-      `Failed to save new announcement for ${ctx.state.user.identifier}: ${e}`
-    )
-    return ctx.badRequest('There was an error adding the announcement.')
-  }
-
-  logger.info(`Added announcement for ${ctx.state.user.identifier}`)
-  return ctx.created({ createdAnnouncement })
-}
-
-async function editAnnouncement (ctx) {
-  if (!ctx.state.user.admin) {
-    return ctx.forbidden('You are not an administrator!')
-  }
-  const announcementID = ctx.params.announcementID
-  const body = ctx.request.body
-  const updatedAnnouncement = await Announcement.findOne({
-    _id: announcementID
-  })
-
-  if (!updatedAnnouncement) return ctx.notFound('Could not find announcement.')
-
-  if ('title' in body) updatedAnnouncement.title = body.title
-  if ('body' in body) updatedAnnouncement.body = body.body
-  if ('isPinned' in body) updatedAnnouncement.isPinned = body.isPinned
-
-  try {
-    await updatedAnnouncement.save()
-  } catch (e) {
-    logger.error(
-      `Failed to save new announcement for ${ctx.state.user.identifier}: ${e}`
-    )
-    return ctx.badRequest('There was an error editing the announcement.')
-  }
-
-  logger.info(`Edited announcement for ${ctx.state.user.identifier}`)
-  return ctx.ok({ updatedAnnouncement })
+  await createdAnnouncement.save()
+  return createdAnnouncement
 }
 
 /**
- * Deletes an announcement given its ID.
- * Request parameters:
- *  - announcementID: the announcement ID
- * @param {Koa context} ctx
+ * Edit a given announcement.
+ * @param id {String} the ID of the announcement you want to edit
+ * @param params {{body?: String, isPinned?: boolean, title?: String}} Announcement parameters you want to change
+ * @returns {Promise<Announcement>} The edited announcement
+ * @throws Error if the provided Announcement ID does not exist
+ * @throws Error if something went wrong while saving the provided Announcement
  */
-async function deleteAnnouncement (ctx) {
-  if (!ctx.state.user.admin) {
-    return ctx.forbidden('You are not an administrator!')
-  }
-  const { announcementID } = ctx.params
-  const deletedAnnouncement = await Announcement.findOne({
-    _id: announcementID
+async function editAnnouncement (id, params) {
+  const announcement = await Announcement.findOne({
+    _id: id
   })
-
-  if (!deletedAnnouncement) {
-    return ctx.notFound('Couldn\'t find the announcement!')
+  if (!announcement) {
+    const err = new Error('Could not find an announcement with the provided ID!')
+    err.code = 'MISSING'
+    throw err
   }
 
-  deletedAnnouncement.remove()
+  announcement.title = params.title === undefined ? announcement.title : params.title
+  announcement.body = params.body === undefined ? announcement.body : params.body
+  announcement.isPinned = params.isPinned === undefined ? announcement.isPinned : params.isPinned
 
-  logger.info(`Deleted announcement for ${ctx.state.user.identifier}`)
-  ctx.ok({ deletedAnnouncement })
+  announcement.save()
+  return announcement
+}
+
+/**
+ * Delete an announcement
+ * @param id The MongoDB ObjectId of the announcement to delete
+ * @returns {Promise<void>}
+ * @throws Error on MongoDB error, or if the object does not exist.
+ */
+async function deleteAnnouncement (id) {
+  const result = await Announcement.deleteOne({ _id: id })
+
+  if (result.n < 1) {
+    const err = new Error('Announcement does not exist!')
+    err.code = 'NOTFOUND'
+    throw err
+  }
 }
 
 module.exports = {

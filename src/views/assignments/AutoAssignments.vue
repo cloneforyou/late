@@ -57,6 +57,7 @@
 
 <script>
 import Draggable from 'vuedraggable'
+const { shuffle } = require('weighted-shuffle')
 
 export default {
   components: {
@@ -87,20 +88,21 @@ export default {
   },
   methods: {
     submitAutoAssign () {
-      this.autoAssign()
+      let timemap = this.generateFreeTimeTable()
+      this.weightedShuffle(timemap)
 
       this.$buefy.toast.open({
         type: 'is-success',
         message: 'Auto-scheduled your assignments!'
       })
     },
-    autoAssign () {
+    generateFreeTimeTable () {
       // get furthest assignment due date
       let furthest = this.assignments.reduce((max, a) =>
         a.dueDate > max ? a.dueDate : max, this.assignments[0].dueDate)
 
       // find # of days between now and furthest due date
-      let dayspan = new Date(new Date(furthest) - new Date()).getDate()
+      let dayspan = Math.ceil((new Date(furthest).getTime() - new Date().getTime()) / (24 * 60 * 60 * 1000))
 
       // create a map where each key is the date and value is a map representing 15-min time slots
       let timeMap = new Map()
@@ -154,6 +156,24 @@ export default {
         }
         timeMap.set(newDateKey, map)
       }
+
+      return timeMap
+    },
+    weightedShuffle (timeMap) {
+      let tuples = {}
+
+      for (let i = 0; i < this.assignments.length; i++) {
+        let pre = this.assignments[i].priority
+        let post = i
+        let timeLeft = Math.ceil((new Date(this.assignments[i].dueDate).getTime() -
+          new Date().getTime()) / (24 * 60 * 60 * 1000))
+        let hours = this.assignments[i].timeEstimate
+
+        var weight = (1.0 / timeLeft) * 10 + (2 * pre + post) * 1.5 + hours
+        tuples[this.assignments[i].id] = weight
+      }
+
+      let weighted = shuffle(tuples, 'desc')
     }
   }
 }

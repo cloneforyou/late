@@ -38,6 +38,21 @@
               </li>
             </transition-group>
           </Draggable>
+          <section>
+            <b-field
+              style="margin-top: 4%;"
+              label="Max time allotment (hours):"
+            >
+              <b-slider
+                v-model="maxTime"
+                :min="0.5"
+                :max="4"
+                :step="0.5"
+                ticks
+                rounded
+              />
+            </b-field>
+          </section>
         </section>
         <footer class="modal-card-foot">
           <b-button @click="$parent.close()">
@@ -67,7 +82,8 @@ export default {
   data () {
     return {
       assignments: [],
-      drag: false
+      drag: false,
+      maxTime: 1 // in hours
     }
   },
   computed: {
@@ -88,8 +104,9 @@ export default {
   },
   methods: {
     submitAutoAssign () {
-      let timemap = this.generateFreeTimeTable()
-      this.weightedShuffle(timemap)
+      let timeMap = this.generateFreeTimeTable()
+      let weighted = this.weightedShuffle()
+      this.assignSlots(timeMap, weighted)
 
       this.$buefy.toast.open({
         type: 'is-success',
@@ -159,9 +176,10 @@ export default {
 
       return timeMap
     },
-    weightedShuffle (timeMap) {
-      let tuples = {}
+    weightedShuffle () {
+      let tuples = []
 
+      // assign weights
       for (let i = 0; i < this.assignments.length; i++) {
         let pre = this.assignments[i].priority
         let post = i
@@ -170,10 +188,26 @@ export default {
         let hours = this.assignments[i].timeEstimate
 
         var weight = (1.0 / timeLeft) * 10 + (2 * pre + post) * 1.5 + hours
-        tuples[this.assignments[i].id] = weight
+
+        // divide each assigment into smaller blocks based on maxTime
+        var time = this.maxTime
+        for (let j = 0; j < this.assignments[i].timeEstimate; j += this.maxTime) {
+          if (this.assignments[i].timeEstimate - j < this.maxTime) {
+            time = this.assignments[i].timeEstimate - j
+          }
+          tuples.push([{ id: this.assignments[i].id, time: time }, weight])
+        }
       }
 
-      let weighted = shuffle(tuples, 'desc')
+      // perform weighted shuffle algorithm on assignments
+      return shuffle(tuples, 'desc')
+    },
+    assignSlots (timeMap, weighted) {
+      console.log(timeMap)
+      console.log(weighted)
+    },
+    canFit (timeMap, start, timeAmount) {
+
     }
   }
 }

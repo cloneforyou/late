@@ -84,22 +84,20 @@
       </router-link>
 
       <div class="panel-block has-background-light no-hover">
-        <div>
-          <b-button
-            @click="showAutoScheduler=true"
-          >
-            Auto Schedule
-          </b-button>
-          <b-modal
-            :active.sync="showAutoScheduler"
-            has-modal-card
-            trap-focus
-            aria-role="dialog"
-            aria-modal
-          >
-            <AutoScheduler />
-          </b-modal>
-        </div>
+        <b-button
+          @click="showAutoScheduler=true"
+        >
+          Auto Schedule
+        </b-button>
+        <b-modal
+          :active.sync="showAutoScheduler"
+          has-modal-card
+          trap-focus
+          aria-role="dialog"
+          aria-modal
+        >
+          <AutoScheduler />
+        </b-modal>
         <router-link
           :to="{name: 'coursework-upcoming'}"
           class="button is-fullwidth browseAssessmentsButton"

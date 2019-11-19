@@ -105,14 +105,55 @@ export default {
       // create a map where each key is the date and value is a map representing 15-min time slots
       let timeMap = new Map()
       let curDate = new Date()
-      for (let i = 0; i < dayspan; i++) {
-        let newDateKey = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate() + i, 0, 0, 0, 0)
-        timeMap.set(newDateKey, new Map())
+
+      let start = parseInt(this.user.earliestWorkTime.replace(':', ''))
+      let end = parseInt(this.user.latestWorkTime.replace(':', ''))
+
+      let classes = this.$store.state.schedule.courses
+      let classDayMap = new Map()
+      // init class day map to size of week
+      for (let i = 0; i < 7; i++) classDayMap.set(i, [])
+
+      // gets periods from each course and puts in week array
+      for (let i = 0; i < classes.length; i++) {
+        let periods = classes[i].periods
+        for (let j = 0; j < periods.length; j++) {
+          if (periods[j].type !== 'LEC') continue
+          classDayMap.get(periods[j].day).push({ start: parseInt(periods[j].start), end: parseInt(periods[j].end) })
+        }
       }
 
-      // for latest - earliest, add
+      // add unavailabilities
+      let ua = this.$store.state.unavailability.unavailabilities
+      for (let i = 0; i < ua.length; i++) {
+        let days = ua[i].daysOfWeek
+        for (let j = 0; j < days.length; j++) {
+          classDayMap.get(days[j]).push({ start: parseInt(ua[i].startTime.replace(':', '')),
+            end: parseInt(ua[i].endTime.replace(':', '')) })
+        }
+      }
 
-      console.log(this.$store.state)
+      // create a hash map representation of all free 15-min time blocks in each day from dayspan
+      for (let d = 0; d < dayspan; d++) {
+        let newDateKey = new Date(curDate.getFullYear(), curDate.getMonth(), curDate.getDate() + d, 0, 0, 0, 0)
+        let map = new Map()
+
+        for (let i = start; i < end; i += 15) {
+          if (i % 100 === 60) i += 40 // handle time format
+
+          let takenBlocks = classDayMap.get(newDateKey.getDay())
+
+          var conflict = false
+          for (let j = 0; j < takenBlocks.length; j++) {
+            if (i >= takenBlocks[j].start && i < takenBlocks[j].end) {
+              conflict = true
+            }
+          }
+
+          if (!conflict) map.set(i)
+        }
+        timeMap.set(newDateKey, map)
+      }
     }
   }
 }

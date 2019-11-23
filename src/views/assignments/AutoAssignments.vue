@@ -97,6 +97,7 @@ export default {
     }
   },
   mounted () {
+    console.log(this.$store.state)
     // get upcoming assignments from assessments
     this.assignments = this.$store.state.assessments.upcomingAssessments
       .filter(item => item.assessmentType === 'assignment' && item.fullyScheduled === false)
@@ -177,6 +178,16 @@ export default {
       return timeMap
     },
     weightedShuffle () {
+      let weights = [1, 2, 3, 4, 5]
+      weights.sort(function (a, b) {
+        let aw = Math.pow(Math.random(), 1.0 / a)
+        let bw = Math.pow(Math.random(), 1.0 / b)
+        if (aw < bw) return -1
+        else if (aw > bw) return 1
+        else return 0
+      })
+      console.log(weights)
+
       let tuples = []
 
       // assign weights
@@ -195,7 +206,7 @@ export default {
           if (this.assignments[i].timeEstimate - j < this.maxTime) {
             time = this.assignments[i].timeEstimate - j
           }
-          tuples.push([{ id: this.assignments[i].id, time: time }, weight])
+          tuples.push([{ id: this.assignments[i].id, time: time }, weight + j])
         }
       }
 
@@ -203,11 +214,49 @@ export default {
       return shuffle(tuples, 'desc')
     },
     assignSlots (timeMap, weighted) {
-      console.log(timeMap)
+      // starting number to try and evenly distibute blocks across the schedule
+      let average = Math.ceil(weighted.length / timeMap.size)
       console.log(weighted)
-    },
-    canFit (timeMap, start, timeAmount) {
 
+      var currentDay = 0
+      var timeMapItr = timeMap.values().next()
+      while (currentDay < timeMap.size) {
+        let daySize = timeMapItr.value.size
+        let dayStep = Math.ceil(daySize / (this.maxTime * 60 / 4))
+
+        for (let i = 0; i < average; i++) {
+          if (weighted.length === 0) break
+
+          let canFit = false
+          let timeFit = 0
+          let dayItr = timeMapItr.value.keys() // reset day iterator
+          while (!canFit) {
+            timeFit = dayItr.next().value
+            canFit = this.canFit(timeMapItr.value, timeFit, weighted[i][0].time * 60 / 4)
+          }
+
+          // timeFit represents a starting time that works for the current block
+          for (let j = 0; j < weighted[i][0].time * 60 / 15; j++) {
+            timeMapItr.value.delete(timeFit)
+            timeFit += 15
+          }
+        }
+
+        currentDay++
+      }
+    },
+    /**
+     * Returns (false, nextTime) if timeAmount starting at start, cannot fit in a given day
+     *  nextTime is the next time slot after the check is made
+     * Returns (true, start) if it can fit in given time
+     */
+    canFit (timeMapDay, start, timeAmount) {
+      // incrementor (15) is size of time block
+      var i = start
+      for (; i < start + timeAmount; i += 15) {
+        if (!timeMapDay.has(i)) return (false, i + timeAmount)
+      }
+      return true
     }
   }
 }

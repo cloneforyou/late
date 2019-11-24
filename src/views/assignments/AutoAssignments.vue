@@ -178,16 +178,6 @@ export default {
       return timeMap
     },
     weightedShuffle () {
-      let weights = [1, 2, 3, 4, 5]
-      weights.sort(function (a, b) {
-        let aw = Math.pow(Math.random(), 1.0 / a)
-        let bw = Math.pow(Math.random(), 1.0 / b)
-        if (aw < bw) return -1
-        else if (aw > bw) return 1
-        else return 0
-      })
-      console.log(weights)
-
       let tuples = []
 
       // assign weights
@@ -213,7 +203,7 @@ export default {
       // perform weighted shuffle algorithm on assignments
       return shuffle(tuples, 'desc')
     },
-    assignSlots (timeMap, weighted) {
+    async assignSlots (timeMap, weighted) {
       // starting number to try and evenly distibute blocks across the schedule
       let average = Math.ceil(weighted.length / timeMap.size)
       console.log(weighted)
@@ -239,6 +229,28 @@ export default {
           for (let j = 0; j < weighted[i][0].time * 60 / 15; j++) {
             timeMapItr.value.delete(timeFit)
             timeFit += 15
+          }
+
+          // get assignment from database to retreive any assigned blocks
+          let request
+          try {
+            request = await this.$http.get('/assignments/a/' + weighted[i][0].id)
+          } catch (e) {
+            console.log(e.response.data.message)
+          }
+          let blocks = request.data.assignment._blocks
+
+          // add assignment to calendar block
+          try {
+            request = await this.$http.patch(
+              '/assignments/a/' + weighted[i][0].id,
+              {} // block time changes
+            )
+          } catch (e) {
+            return this.$buefy.toast.open({
+              message: e.response.data.message,
+              type: 'is-danger'
+            })
           }
         }
 

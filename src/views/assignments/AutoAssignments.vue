@@ -209,10 +209,14 @@ export default {
       console.log(weighted)
 
       var currentDay = 0
-      var timeMapItr = timeMap.values().next()
-      var timeMapKeyItr = timeMap.keys().next() // to get current assignment date
+      var timeMapValItr = timeMap.values()
+      var timeMapKeyItr = timeMap.keys() // to get current assignment date
+
       while (currentDay < timeMap.size) {
-        let daySize = timeMapItr.value.size
+        let currentDayKey = timeMapKeyItr.next().value
+        let timeMapVal = timeMapValItr.next().value
+
+        let daySize = timeMapVal.size
         let dayStep = Math.ceil(daySize / (this.maxTime * 60 / 4))
 
         for (let i = 0; i < average; i++) {
@@ -220,23 +224,35 @@ export default {
 
           let canFit = false
           let timeFit = 0
-          let dayItr = timeMapItr.value.keys() // reset day iterator
+          let dayItr = timeMapVal.keys() // reset day iterator
           while (!canFit) {
             timeFit = dayItr.next().value
-            canFit = this.canFit(timeMapItr.value, timeFit, weighted[i][0].time * 60 / 4)
+            canFit = this.canFit(timeMapVal, timeFit, weighted[i][0].time * 60 / 4)
           }
 
           // timeFit represents a starting time that works for the current block
           // delete time slots to now mark as unavailable
-          for (let j = timeFit; j < weighted[i][0].time * 60 / 15; j += 15) {
-            timeMapItr.value.delete(j)
+          let deleteTime = timeFit
+          for (let j = 0; j < weighted[i][0].time * 60 / 15; j += 15) {
+            timeMapVal.delete(deleteTime)
+            deleteTime += 15
+            if (deleteTime % 100 === 60) deleteTime += 40
           }
 
-          console.log(timeMapItr.value)
-          let startTime = new Date()
-          startTime.setHours(0)
-          startTime.setMinutes(0)
+          let startTime = new Date(currentDayKey)
+          startTime.setHours(Math.floor(timeFit / 100))
+          startTime.setMinutes(timeFit % 100)
           startTime.setSeconds(0)
+
+          let endTime = new Date(currentDayKey)
+          let addedTime = timeFit
+          for (let j = 0; j < Math.floor(weighted[i][0].time * 60 / 15); j += 15) {
+            addedTime += 15
+            if (addedTime % 100 === 60) addedTime += 40 // handle time trsnformation
+          }
+          endTime.setHours(Math.floor(addedTime / 100))
+          endTime.setHours(addedTime % 100)
+          endTime.setSeconds(0)
           // post new block
           // this.$http.post('/blocks/assignment/' + weighted[i][0], { startTime: 0, endTime: 0, shared: true })
         }

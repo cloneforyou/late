@@ -210,6 +210,7 @@ export default {
 
       var currentDay = 0
       var timeMapItr = timeMap.values().next()
+      var timeMapKeyItr = timeMap.keys().next() // to get current assignment date
       while (currentDay < timeMap.size) {
         let daySize = timeMapItr.value.size
         let dayStep = Math.ceil(daySize / (this.maxTime * 60 / 4))
@@ -226,32 +227,18 @@ export default {
           }
 
           // timeFit represents a starting time that works for the current block
-          for (let j = 0; j < weighted[i][0].time * 60 / 15; j++) {
-            timeMapItr.value.delete(timeFit)
-            timeFit += 15
+          // delete time slots to now mark as unavailable
+          for (let j = timeFit; j < weighted[i][0].time * 60 / 15; j += 15) {
+            timeMapItr.value.delete(j)
           }
 
-          // get assignment from database to retreive any assigned blocks
-          let request
-          try {
-            request = await this.$http.get('/assignments/a/' + weighted[i][0].id)
-          } catch (e) {
-            console.log(e.response.data.message)
-          }
-          let blocks = request.data.assignment._blocks
-
-          // add assignment to calendar block
-          try {
-            request = await this.$http.patch(
-              '/assignments/a/' + weighted[i][0].id,
-              {} // block time changes
-            )
-          } catch (e) {
-            return this.$buefy.toast.open({
-              message: e.response.data.message,
-              type: 'is-danger'
-            })
-          }
+          console.log(timeMapItr.value)
+          let startTime = new Date()
+          startTime.setHours(0)
+          startTime.setMinutes(0)
+          startTime.setSeconds(0)
+          // post new block
+          // this.$http.post('/blocks/assignment/' + weighted[i][0], { startTime: 0, endTime: 0, shared: true })
         }
 
         currentDay++

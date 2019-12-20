@@ -141,7 +141,7 @@ export default {
     filteredUpcomingAssessments () {
       return this.$store.state.assessments.upcomingAssessments.filter(
         assessment =>
-          moment(this.selectModal.end).isBefore(
+          moment(this.selectModal.end).isSameOrBefore(
             assessment.dueDate || assessment.date
           ) &&
           (assessment.assessmentType === 'exam' ||
@@ -465,7 +465,11 @@ export default {
 }
 .exit-fullscreen {
   transition: 0.2s;
-  margin-top: -50px;
+  margin-top: -35px;
   .fa-expand-arrows-alt { display: none; }
+}
+
+.fc-time-grid-container {
+  max-height: 80vh!important;
 }
 </style>

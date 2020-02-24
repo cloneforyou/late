@@ -111,6 +111,7 @@ app.use(async (ctx, next) => {
   } catch (e) {
     ctx.status = e.status || 500
     logger.error(e)
+    logger.error(e.stack)
 
     Sentry.withScope(scope => {
       scope.addEventProcessor(event => Sentry.Handlers.parseRequest(event, ctx.request))

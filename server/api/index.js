@@ -13,6 +13,7 @@ const notOnBreak = (ctx, next) => {
 
 router.use('/students', require('./students'))
 router.use('/courses', notOnBreak, require('./courses'))
+router.use('/course_sections', require('./course_sections'))
 router.use('/assignments', notOnBreak, require('./assignments'))
 router.use('/exams', notOnBreak, require('./exams'))
 router.use('/account', require('./account')) // removed notOnBreak temporarily

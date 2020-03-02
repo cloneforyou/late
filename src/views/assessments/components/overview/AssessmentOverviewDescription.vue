@@ -20,16 +20,16 @@
         />
         <i v-else>No description given.</i>
       </template>
-      <span
+      <button
         v-if="assessmentType === 'exam' || isOwner"
-        class="edit-description tooltip is-tooltip-left"
+        class="edit-description button is-pulled-right"
         :data-tooltip="
           editing ? 'Click to save description.' : 'Click to edit description.'
         "
         @click="toggleEditing"
       >
         <i class="fas fa-pencil-alt" />
-      </span>
+      </button>
     </blockquote>
   </div>
 </template>
@@ -125,11 +125,10 @@ export default {
   }
 
   .edit-description {
+    margin-top: -30px;
     cursor: pointer;
     z-index: 2;
-    position: absolute;
-    top: 10px;
-    right: 10px;
+
   }
 }
 </style>

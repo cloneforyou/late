@@ -408,6 +408,7 @@ footer.footer {
 
 .fc-button-primary {
   background-color: var(--dark-color);
+  color: white;
 }
 
 .fc-button-active {

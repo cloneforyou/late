@@ -37,16 +37,20 @@
             >{{ headerText(key) }}</span>
             <!-- <span class="tag is-danger is-pulled-right day-weight-tag">Light</span> -->
             <span class="add-assessment-buttons">
-              <i
-                class="has-text-white fas fa-clipboard-check"
+              <span
+                class="tag icon is-pulled-right"
                 :title="addAssessmentTitle(key, 'assignment')"
                 @click="addAssessmentClick(key, 'assignment')"
-              />
-              <i
-                class="has-text-white fas fa-exclamation-triangle"
+              >
+                <i class="fas fa-clipboard-check" />
+              </span>
+              <span
+                class="tag icon is-pulled-right"
                 :title="addAssessmentTitle(key, 'exam')"
                 @click="addAssessmentClick(key, 'exam')"
-              />
+              >
+                <i class="fas fa-exclamation-triangle" />
+              </span>
             </span>
           </p>
           <AssessmentPanelBlock
@@ -238,15 +242,29 @@ export default {
 
   .add-assessment-buttons {
     position: absolute;
+
     right: 10px;
 
     transition: opacity 0.1s;
     @media only screen and (min-width: 768px) {
       opacity: 0;
     }
-    i {
+    span {
+      background-color: white;
+      width: 45px;
+      margin: 2px;
+      border-radius: 4px;
       cursor: pointer;
-      padding-left: 10px;
+      i {
+        font-size: 15px;
+        color: #2e3b59;
+      }
+    }
+    @media only screen and (max-width: 768px) {
+      span { width: 55px; }
+    }
+    span:hover {
+      background-color: rgb(230, 230, 230);
     }
   }
 

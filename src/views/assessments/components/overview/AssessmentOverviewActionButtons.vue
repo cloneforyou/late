@@ -1,34 +1,40 @@
 <!--Assessment: Overview page action buttons module-->
 <template>
   <div class="assessment-actions">
-    <div class="is-hidden-mobile clearfix">
-      <b-button
-        v-if="assessmentType === 'exam' || isOwner"
-        class="edit-assessment"
-        type="is-warning"
-        :title="editButtonTitle"
-        @click="$emit('toggle-editing')"
-      >
-        <i class="fas fa-edit" />
-        Edit {{ capitalizedAssessmentType }}
-      </b-button>
-      <b-button
-        v-if="assessmentType === 'assignment' && isOwner"
-        type="is-link"
-        class="tooltip is-tooltip-top share-assignment"
-        data-tooltip="Collaborate on this assignment with other students!"
-        @click="toggleSharedClick"
-      >
-        <i class="fas fa-users" />
-        {{ assessment.shared ? "Stop Sharing" : "Share" }}
-      </b-button>
-      <b-button
-        class="is-pulled-right copy-assessment"
-        @click="$emit('copy-assessment')"
-      >
-        <i class="far fa-copy" />
-        Duplicate {{ capitalizedAssessmentType }}
-      </b-button>
+    <div class="is-hidden-mobile clearfix field has-addons">
+      <p class="control">
+        <button
+          v-if="assessmentType === 'exam' || isOwner"
+          class="edit-assessment button is-info is-outlined"
+          type="is-warning"
+          :title="editButtonTitle"
+          @click="$emit('toggle-editing')"
+        >
+          <i class="fas fa-edit" />
+          Edit {{ capitalizedAssessmentType }}
+        </button>
+      </p>
+      <p class="control">
+        <button
+          v-if="assessmentType === 'assignment' && isOwner"
+          type="is-link"
+          class="tooltip is-tooltip-top share-assignment button is-info is-outlined"
+          data-tooltip="Collaborate on this assignment with other students!"
+          @click="toggleSharedClick"
+        >
+          <i class="fas fa-users" />
+          {{ assessment.shared ? "Stop Sharing" : "Share" }}
+        </button>
+      </p>
+      <p class="control">
+        <button
+          class="is-pulled-right copy-assessment button is-info is-outlined"
+          @click="$emit('copy-assessment')"
+        >
+          <i class="far fa-copy" />
+          Duplicate {{ capitalizedAssessmentType }}
+        </button>
+      </p>
     </div>
 
     <b-dropdown

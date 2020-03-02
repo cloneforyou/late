@@ -10,6 +10,7 @@
           :value="scheduledMinutes"
           :max="totalEstimatedMinutes"
           size="is-medium"
+          class="progress-text"
           show-value
         >
           scheduled
@@ -22,6 +23,7 @@
           :value="finishedMinutes"
           :max="scheduledMinutes"
           size="is-medium"
+          class="progress-text"
           show-value
         >
           {{ assessmentType === "assignment" ? "worked" : "studied" }} for
@@ -496,6 +498,10 @@ export default {
 <style lang="scss" scoped>
 .box.percents {
   padding: 10px;
+}
+
+.progress-text {
+  text-shadow: -1px 1px 3px rgba(150, 150, 150, 0.6);
 }
 
 .collaborator {

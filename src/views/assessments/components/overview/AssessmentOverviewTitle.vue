@@ -1,9 +1,9 @@
 <!--Assessments: assessment overview title module-->
 <template>
-  <div class="assessment-overview-title is-flex-desktop">
+  <div class="assessment-overview-title is-flex">
     <div
       v-if="assessmentType === 'assignment'"
-      class="is-hidden-touch"
+      class="is-pulled-right"
     >
       <button
         :title="toggleButtonTitle"
@@ -19,7 +19,6 @@
         {{ assessment.completed ? "Mark Incomplete" : "Mark Complete" }}
       </button>
     </div>
-
     <h1
       v-if="!editing"
       class="title assessment-title has-text-centered-touch"
@@ -31,19 +30,14 @@
         class="fas fa-users has-text-grey-light"
         title="Shared assignment"
       />
-      <i
-        v-if="assessmentType === 'exam' || isOwner"
-        title="Edit title"
-        class="fas fa-pencil-alt edit-title-icon has-text-grey"
-        @click="editing = true"
-      />
     </h1>
     <form
       v-else
+      class="field has-addons edit-assessment"
       :style="{flex: 1}"
       @submit.prevent="save"
     >
-      <div class="select">
+      <div class="select control">
         <select v-model="tempCourseCRN">
           <option
             v-for="course in courses"
@@ -58,14 +52,18 @@
         id="edited-assessment-title"
         v-model.trim="tempTitle"
         type="text"
-        class="input"
+        class="input control"
         :placeholder="assessment.title"
       >
-      <i
-        title="Save course and title"
-        class="fa fa-check save-title-icon has-text-success"
-        @click="save"
-      />
+      <p class="control">
+        <button class="button">
+          <i
+            title="Save course and title"
+            class="fa fa-check save-title-icon has-text-success"
+            @click="save"
+          />
+        </button>
+      </p>
     </form>
 
     <div
@@ -73,55 +71,54 @@
       class="has-text-centered-touch"
     >
       <div
-        class="tag is-medium course-tag"
-        :style="{'background-color': course.color}"
+        class="field has-addons is-medium course-tag"
       >
         <router-link
           :to="{name: 'coursework-upcoming'}"
-          class="tooltip is-tooltip-bottom has-text-white back-button"
+          class="control is-primary"
           data-tooltip="Browse all course work."
         >
-          <i class="fas fa-angle-left" />
+          <button class="button">
+            <i class="fas fa-angle-left" />
+          </button>
         </router-link>
-        <span
-          class="tooltip is-tooltip-bottom"
-          :class="assessmentType"
-          :data-tooltip="`${course.title} ${capitalizedAssessmentType}`"
-          @click="$store.commit('OPEN_COURSE_MODAL', course)"
-        >
-          <b class="course-title">{{ course.title }}</b>
-          <span class="margin-right">
-            {{ assessment.passed ? "Past " : ""
-            }}{{
-              assessmentType === "assignment" && assessment.isRecurring
-                ? "Recurring "
-                : ""
-            }}
-          </span>
-          <i
-            class="fas"
-            :class="
-              assessmentType === 'assignment'
-                ? 'fa-clipboard-check'
-                : 'fa-exclamation-triangle'
-            "
-          />
-        </span>
+        <p class="control">
+          <button
+            class="button"
+            :class="assessmentType"
+            :data-tooltip="`${course.title} ${capitalizedAssessmentType}`"
+            @click="$store.commit('OPEN_COURSE_MODAL', course)"
+          >
+            <b class="course-title">{{ course.title }}</b>
+            <span class="margin-right">
+              {{ assessment.passed ? "Past " : ""
+              }}{{
+                assessmentType === "assignment" && assessment.isRecurring
+                  ? "Recurring "
+                  : ""
+              }}
+            </span>
+            <i
+              class="fas"
+              :class="
+                assessmentType === 'assignment'
+                  ? 'fa-clipboard-check'
+                  : 'fa-exclamation-triangle'
+              "
+            />
+          </button>
+        </p>
+        <p class="control">
+          <button class="button">
+            <i
+              v-if="assessmentType === 'exam' || isOwner"
+              title="Edit title"
+              class="fas fa-pencil-alt edit-title-icon"
+              @click="editing = true"
+            />
+          </button>
+        </p>
       </div>
-
-      <b-button
-        v-if="assessmentType === 'assignment'"
-        class="is-hidden-desktop touch-complete-button"
-        type="is-success"
-        :outlined="!assessment.completed"
-        :disabled="!isOwner"
-        @click="$emit('toggle-completed')"
-      >
-        <i
-          class="fa-check-square"
-          :class="[assessment.completed ? 'fas' : 'far']"
-        />
-      </b-button>
     </div>
   </div>
 </template>
@@ -210,45 +207,32 @@ export default {
   border-bottom-left-radius: 0px;
 }
 
-.touch-complete-button {
-  height: 2em;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
 .edit-title-icon {
-  opacity: 0;
-  transition: opacity 0.3s;
   cursor: pointer;
   vertical-align: middle;
   font-size: 0.7em;
-  position: absolute;
-  top: 10px;
 }
 .save-title-icon {
   cursor: pointer;
   vertical-align: middle;
-  margin-left: 10px;
   font-size: 1.3em;
 }
 .assessment-overview-title {
+  background-color: white;
   flex-direction: row-reverse;
   z-index: 5;
   position: sticky;
-  top: 60px;
-  align-items: center;
+  top: 54px;
+  padding-top: 15px;
+  padding-bottom: 15px;
+  -webkit-box-align: bottom;
+  box-align: bottom;
 
   .pad {
     background-color: white;
     border-radius: 4px;
     padding: 0 10px;
     margin-right: -10px;
-  }
-
-  &:hover {
-    .edit-title-icon {
-      opacity: 1;
-    }
   }
 }
 
@@ -258,18 +242,22 @@ export default {
 
 .assessment-title {
   margin-bottom: 0;
+  margin-left: 5px;
+}
+
+.edit-assessment {
+  margin-right: 15vw;
 }
 
 .toggle-complete {
   i {
     margin-right: 5px;
   }
-  @media only screen and (max-width: 768px) {
-    margin-top: 5px;
-  }
 }
 
 .course-tag {
+
+  * { background-color: transparent}
   cursor: pointer;
   color: white;
   border-radius: 4px;

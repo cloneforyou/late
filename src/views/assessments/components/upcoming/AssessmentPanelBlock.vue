@@ -3,7 +3,7 @@
     class="assessment panel-block"
     :class="panelBlockClasses"
     :data-tooltip="showScheduled ? scheduleWarningTitle : undefined"
-    :style="{'border-right-color': `rgba(255, 0, 0, ${assessmentTimeWarningOpacity})`}"
+    :style="{'border-right-color': `rgba(255, 0, 0, ${assessmentTimeWarningOpacity / 3})`}"
   >
     <span
       v-if="assessmentType === 'assignment'"
@@ -181,8 +181,11 @@ export default {
   transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1);
 
   &.tooltip {
-    border-right-width: 2px;
+    border-right-width: 3px;
     border-right-style: solid;
+    transition: 0.1s;
+    -webkit-transition: 0.1s;
+    border-radius: 0px;
   }
 
   .assessment-link {
@@ -201,6 +204,24 @@ export default {
   .priority,
   .exam {
     font-weight: 500;
+  }
+
+  .course-title {
+    margin-right: 7px;
+  }
+}
+
+.assessment:hover {
+  &.tooltip {
+    border-right-width: 5px;
+    transition: 0.1s;
+    -webkit-transition: 0.1s;
+  }
+}
+
+.assessment:active {
+  &.tooltip {
+    border-right-width: 10px;
   }
 }
 </style>

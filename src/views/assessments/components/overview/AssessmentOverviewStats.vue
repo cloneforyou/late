@@ -18,25 +18,31 @@
             :class="{'is-italic': assessment.priority === 1}"
             :style="{'font-weight': fontWeight}"
           >
-            <i
-              v-if="assessmentType === 'exam' || isOwner"
-              v-show="assessment.priority - 1 in priorityStrings"
-              class="fas fa-minus has-text-grey decrease-priority"
-              :title="
-                'Decrease priority to ' + priorityStrings[assessment.priority - 1]
-              "
-              @click="changePriority(-1)"
-            />
-            {{ priorityString }}
-            <i
-              v-if="assessmentType === 'exam' || isOwner"
-              v-show="assessment.priority + 1 in priorityStrings"
-              class="fas fa-plus has-text-grey increase-priority"
-              :title="
-                'Increase priority to ' + priorityStrings[assessment.priority + 1]
-              "
-              @click="changePriority(1)"
-            />
+            <span class="tag">
+              <i
+                v-if="assessmentType === 'exam' || isOwner"
+                class="fas fa-minus has-text-grey decrease-priority"
+                :class="{'unselectable-priority': !(assessment.priority - 1 in priorityStrings)}"
+                :title="
+                  'Decrease priority to ' + priorityStrings[assessment.priority - 1]
+                "
+                @click="changePriority(-1)"
+              />
+            </span>
+            <span class="priority-string">
+              {{ priorityString }}
+            </span>
+            <span class="tag">
+              <i
+                v-if="assessmentType === 'exam' || isOwner"
+                class="fas fa-plus has-text-grey increase-priority"
+                :class="{'unselectable-priority': !(assessment.priority + 1 in priorityStrings)}"
+                :title="
+                  'Increase priority to ' + priorityStrings[assessment.priority + 1]
+                "
+                @click="changePriority(1)"
+              />
+            </span>
           </p>
         </div>
       </div>
@@ -54,37 +60,39 @@
           </p>
           <form
             v-if="editingDate"
-            class="control date"
+            class="date field has-addons"
             @submit.prevent="updateDate"
           >
             <input
               v-model="tempDateString"
               :min="minDate"
+              class="control"
               :max="maxDate"
               type="date"
             >
             <input
               v-model="tempTimeString"
               type="time"
+              class="control"
             >
-            <i
-              class="fas fa-check has-text-success save-date"
-              title="Save new date and time."
-              @click="updateDate"
-            />
+            <div class="control">
+              <span class="tag">
+                <i
+                  class="fas fa-check has-text-success save-date"
+                  title="Save new date and time."
+                  @click="updateDate"
+                />
+              </span>
+            </div>
           </form>
           <p
             v-else
             class="subtitle date tooltip is-tooltip-bottom"
             :data-tooltip="timeLeft"
+            title="Edit date and time."
+            @click="editingDate = true"
           >
             {{ shortDateTimeFormat(assessment.date) }}
-            <i
-              v-if="assessmentType === 'exam' || isOwner"
-              class="fas fa-pencil-alt has-text-grey edit-date"
-              title="Edit date and time."
-              @click="editingDate = true"
-            />
           </p>
         </div>
       </div>
@@ -345,6 +353,7 @@ export default {
   margin-top: 20px;
   margin-bottom: 0;
   padding: 5px;
+  padding-bottom: 15px;
 
   .level-item .subtitle {
     color: white;
@@ -355,17 +364,13 @@ export default {
   .edit-date,
   .save-date {
     cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s;
+  }
+  .unselectable-priority {
+    cursor: auto;
+    opacity: 0.3;
   }
   .save-date {
     margin-left: 5px;
-  }
-  .priority:hover {
-    .decrease-priority,
-    .increase-priority {
-      opacity: 1;
-    }
   }
 
   .date:hover {
@@ -374,5 +379,15 @@ export default {
       opacity: 1;
     }
   }
+}
+
+.priority {
+  .priority-string {
+    display: inline-block;
+    width: 150px;
+  }
+  i {
+  font-size: 1.3em;
+}
 }
 </style>

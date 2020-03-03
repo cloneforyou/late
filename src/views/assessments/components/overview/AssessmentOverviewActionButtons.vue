@@ -6,6 +6,7 @@
         <button
           v-if="assessmentType === 'exam' || isOwner"
           class="edit-assessment button is-info is-outlined"
+          data-tooltip="Edit assignment info"
           type="is-warning"
           :title="editButtonTitle"
           @click="$emit('toggle-editing')"
@@ -29,6 +30,7 @@
       <p class="control">
         <button
           class="is-pulled-right copy-assessment button is-info is-outlined"
+          data-tooltip="Duplicate this assignment"
           @click="$emit('copy-assessment')"
         >
           <i class="far fa-copy" />

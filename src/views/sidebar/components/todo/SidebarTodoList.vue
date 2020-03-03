@@ -13,21 +13,6 @@
               required
             >
           </label>
-          <b-tooltip
-            label="Show completed"
-            type="is-light"
-            animated
-            style="cursor: pointer;"
-            :delay="500"
-            @click.native="openCompletedModal"
-          >
-            <b-icon
-              class="is-inline-block is-centered"
-              style="margin-left: 1em;"
-              icon="ellipsis-v"
-              size="is-small"
-            />
-          </b-tooltip>
         </b-field>
       </div>
     </form>
@@ -60,6 +45,20 @@
     >
       <i class="far fa-sticky-note no-items-icon" />
       No to-dos saved yet.
+    </div>
+
+    <div
+      class="panel-block has-background-light has-text-centered"
+    >
+      <b-button
+        class="is-fullwidth showCompletedButton"
+        @click.native="openCompletedModal"
+      >
+        <i
+          class="far fa-check-circle"
+        />
+        Completed Tasks
+      </b-button>
     </div>
   </div>
 </template>
@@ -232,5 +231,17 @@ export default {
       text-decoration: line-through;
     }
   }
+}
+
+.showCompletedButton{
+  &:hover {
+    background-color: #f5efef;
+  }
+  &:focus {
+    border-color: #dbdbdb;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0) !important;
+  }
+  i { margin-right: 3px;}
 }
 </style>

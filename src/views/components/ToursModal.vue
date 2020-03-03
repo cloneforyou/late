@@ -12,14 +12,20 @@
         </p>
       </header>
       <section class="modal-card-body">
-        <div
+        <h1
+          class="is-size-5 is-fullwidth has-text-centered"
+          style="margin-bottom: 15px;"
+        >
+          Learn the in's and out's of LATE with these helpful tours!
+        </h1>
+        <button
           v-for="(tour, index) in tours"
           :key="index"
-          class="panel-block tour"
+          class="tour button is-medium is-fullwidth"
           @click="startTour(index)"
         >
           {{ tour.title }}
-        </div>
+        </button>
       </section>
       <footer class="modal-card-foot">
         <b-button @click="$emit('close-modal')">
@@ -54,15 +60,24 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+
 .modal-card-body {
-  padding: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: space-around;
 }
 
-.panel-block.tour {
-  cursor: pointer;
-  transition:0.2;
+.tour {
+  margin-bottom: 10px;
+  flex: 1 1 auto;
+  flex-basis: 120px;
+  min-height: 50px;
+  min-width: 45%;
+  margin: 5px;
+
 }
-.panel-block.tour:hover {
+.tour:hover {
   transition: 0.2;
   background-color: #dbdbdb
 }

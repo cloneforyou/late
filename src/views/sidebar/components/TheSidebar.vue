@@ -55,7 +55,7 @@
         <a
           v-for="(t, name) in tabs"
           :key="name"
-          class="tooltip"
+          class="tooltip tab-icon"
           :class="[name, {'is-active': tab === name}]"
           :data-tooltip="t.name"
           @click="tab = name"
@@ -282,6 +282,12 @@ export default {
       display: block;
     }
   }
+}
+
+.tab-icon {
+  display: inline-flex!important;
+  align-items: center;
+  justify-content: center;
 }
 
 // The "Add Assignment" and "Add Exam" buttons at the top of the sidebar

@@ -26,6 +26,19 @@
       v1.1.{{ honorableClicks }} - The Honorable
     </h2>
     <div class="content has-text-centered columns">
+      <p
+        class="column online-users is-hidden-tablet"
+        :title="`There ${onlineUsers.length > 1 ? 'are ' + onlineUsers.length + ' users' : 'is 1 user'} online.`"
+        @click="rickRollModalOpen=true"
+      >
+        <span>
+          <p
+            class="title"
+            style="margin-bottom: 0px;"
+          >{{ onlineUsers.length }}</p>
+          <p class="heading">Online</p>
+        </span>
+      </p>
       <p class="column">
         <span class="icon">
           <img
@@ -51,6 +64,19 @@
           Privacy Policy.
         </router-link>
       </p>
+      <p
+        class="column online-users is-hidden-mobile"
+        :title="`There ${onlineUsers.length > 1 ? 'are ' + onlineUsers.length + ' users' : 'is 1 user'} online.`"
+        @click="rickRollModalOpen=true"
+      >
+        <span>
+          <p
+            class="title"
+            style="margin-bottom: 0px;"
+          >{{ onlineUsers.length }}</p>
+          <p class="heading">Online</p>
+        </span>
+      </p>
       <p class="column">
         <span class="icon">
           <i class="fab fa-github" />
@@ -74,6 +100,21 @@
         >Observatory.</a>
       </p>
     </div>
+    <b-modal
+      class="rick-roll-modal"
+      style="height: 100%;"
+      :active.sync="rickRollModalOpen"
+    >
+      <iframe
+        width="960"
+        height="540"
+        style="height: 100%;"
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+        frameborder="0"
+        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      />
+    </b-modal>
   </footer>
 </template>
 
@@ -88,7 +129,13 @@ export default {
       honorableClicks: 0,
       confetti: null,
       confettiSettings: { target: 'footer-canvas', clock: 75, max: 150 },
-      randomAdjective: ''
+      randomAdjective: '',
+      rickRollModalOpen: false
+    }
+  },
+  computed: {
+    onlineUsers () {
+      return this.$store.state.socketio.onlineUsers
     }
   },
   watch: {
@@ -136,6 +183,10 @@ export default {
     h2 {
       padding-bottom: 1rem;
     }
+
+    .online-users {
+      max-width: 250px;
+    }
   }
 
   //Mobile styles
@@ -145,7 +196,7 @@ export default {
 
   //Centers and clumps footer elements together
   .columns {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
   }
 
@@ -156,6 +207,12 @@ export default {
       margin: 10px 0px 0px 0px;
       padding: 0.2em;
     }
+  }
+}
+
+.rick-roll-modal {
+  .modal-content {
+    height: 100%;
   }
 }
 

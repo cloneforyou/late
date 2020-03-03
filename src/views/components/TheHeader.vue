@@ -234,13 +234,6 @@
         <div class="navbar-end">
           <template v-if="loggedIn">
             <a
-              class="navbar-item onlineCount"
-              :title="`There ${onlineUsers.length > 1 ? 'are ' + onlineUsers.length + ' users' : 'is 1 user'} online.`"
-              @click="rickRollModalOpen=true"
-            >
-              <b-tag type="is-primary">{{ onlineUsers.length }} online</b-tag>
-            </a>
-            <a
               class="navbar-item announcement-icon is-hidden-touch"
               :title="announcementsCount + ' new announcements'"
               @click="openAnnouncementsModal"
@@ -383,21 +376,6 @@
       false
       @close-modal="isBugReportModalOpen = false"
     />
-    <b-modal
-      class="rick-roll-modal"
-      style="height: 100%;"
-      :active.sync="rickRollModalOpen"
-    >
-      <iframe
-        width="960"
-        height="540"
-        style="height: 100%;"
-        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
-        frameborder="0"
-        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-      />
-    </b-modal>
   </header>
 </template>
 
@@ -410,14 +388,10 @@ export default {
   },
   data () {
     return {
-      isBugReportModalOpen: false,
-      rickRollModalOpen: false
+      isBugReportModalOpen: false
     }
   },
   computed: {
-    onlineUsers () {
-      return this.$store.state.socketio.onlineUsers
-    },
     seenAnnouncementIDs () {
       return this.$store.state.announcements.seenIDs
     },
@@ -466,11 +440,6 @@ export default {
 </script>
 
 <style lang="scss">
-.rick-roll-modal {
-  .modal-content {
-    height: 100%;
-  }
-}
 
 .has-dropdown:hover .navbar-dropdown {
     animation: navAnimOpen 0.15s ease-in-out;
@@ -560,10 +529,6 @@ export default {
   //Pushes the left and right navbar menus slightly off the edges of the screen.
   padding: 0;
 
-  .navbar-item {
-
-  }
-
   .announcement-icon {
     padding: 0.5rem 0.2rem;
   }
@@ -584,8 +549,8 @@ export default {
     min-height: 95vh;
     background-color: white;
   }
-  //Remove onlineCount and dropdown arrows
-  .onlineCount,.navbar-link:not(.is-arrowless)::after { display: none; }
+  //Remove dropdown arrows
+  .navbar-link:not(.is-arrowless)::after { display: none; }
   //Increase size of buttons without dropdowns
   .home-link,.toolsDropdown {
     padding-top: 15px;
